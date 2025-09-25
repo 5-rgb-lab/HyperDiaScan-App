@@ -1,4 +1,4 @@
-import { Camera, History, User, Home, MessageCircle } from 'lucide-react';
+import { Camera, History, User, Home } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/', icon: Home, label: 'Home' },
   { href: '/scanner', icon: Camera, label: 'Scanner' },
-  { href: '/chat', icon: MessageCircle, label: 'Chat' },
   { href: '/history', icon: History, label: 'History' },
   { href: '/profile', icon: User, label: 'Profile' },
 ];
