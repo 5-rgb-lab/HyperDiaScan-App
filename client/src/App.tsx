@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppHeader from "@/components/AppHeader";
 import Navigation from "@/components/Navigation";
+import FloatingChatButton from "@/components/FloatingChatButton";
 import AuthForm from "@/components/AuthForm";
 import LandingPage from "@/components/LandingPage";
 import Home from "@/pages/Home";
@@ -75,6 +76,7 @@ function AuthenticatedApp() {
         <Router />
       </main>
       
+      <FloatingChatButton />
       <Navigation />
     </div>
   );
