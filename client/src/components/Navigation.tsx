@@ -14,9 +14,9 @@ export default function Navigation() {
   const [location] = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t md:relative md:border-t-0 md:bg-transparent md:backdrop-blur-none">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-border/40 shadow-lg md:relative md:border-t-0 md:bg-transparent md:backdrop-blur-none md:shadow-none">
       <div className="container mx-auto px-4">
-        <div className="flex justify-center md:justify-center gap-2 py-2">
+        <div className="flex justify-around md:justify-center gap-2 py-3 md:py-2">
           {navItems.map((item) => {
             const isActive = location === item.href;
             const Icon = item.icon;
@@ -24,15 +24,24 @@ export default function Navigation() {
             return (
               <Link key={item.href} href={item.href}>
                 <Button
-                  variant={isActive ? 'default' : 'ghost'}
+                  variant="ghost"
                   className={cn(
-                    'flex flex-col gap-1 h-auto py-2 px-3 md:flex-row md:h-9 md:px-3',
-                    isActive && 'text-primary-foreground bg-primary hover:bg-primary/90'
+                    'flex flex-col gap-1 h-auto py-2 px-4 rounded-2xl transition-all duration-300 md:flex-row md:h-10 md:px-4',
+                    'hover:bg-primary/10 hover:text-primary hover:scale-105',
+                    isActive && 'bg-gradient-to-br from-blue-500 to-green-500 text-white shadow-lg hover:bg-gradient-to-br hover:from-blue-600 hover:to-green-600 hover:text-white'
                   )}
                   data-testid={`nav-${item.label.toLowerCase()}`}
                 >
-                  <Icon className="w-5 h-5 md:w-4 md:h-4" />
-                  <span className="text-xs md:text-sm">{item.label}</span>
+                  <Icon className={cn(
+                    "w-5 h-5 md:w-4 md:h-4 transition-all duration-300",
+                    isActive && "drop-shadow-sm"
+                  )} />
+                  <span className={cn(
+                    "text-xs md:text-sm font-medium transition-all duration-300",
+                    isActive && "font-semibold"
+                  )}>
+                    {item.label}
+                  </span>
                 </Button>
               </Link>
             );

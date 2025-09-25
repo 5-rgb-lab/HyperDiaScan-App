@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppHeader from "@/components/AppHeader";
 import Navigation from "@/components/Navigation";
 import AuthForm from "@/components/AuthForm";
+import LandingPage from "@/components/LandingPage";
 import Home from "@/pages/Home";
 import Scanner from "@/pages/Scanner";
 import History from "@/pages/History";
@@ -28,6 +30,8 @@ function Router() {
 
 function AuthenticatedApp() {
   const { user, userProfile, loading, signOut } = useAuth();
+  const [showLanding, setShowLanding] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
 
   if (loading) {
     return (
@@ -40,7 +44,11 @@ function AuthenticatedApp() {
     );
   }
 
-  if (!user) {
+  if (!user && showLanding && !showAuth) {
+    return <LandingPage onGetStarted={() => setShowAuth(true)} />;
+  }
+
+  if (!user && showAuth) {
     return <AuthForm />;
   }
 
