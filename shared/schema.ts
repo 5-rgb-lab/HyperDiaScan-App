@@ -63,7 +63,8 @@ export type FirebaseUser = z.infer<typeof firebaseUserSchema>;
 export const insertUserProfileSchema = userProfileSchema.omit({});
 export const insertScanRecordSchema = scanRecordSchema.omit({ id: true, timestamp: true });
 export const analyzeFoodSchema = nutritionDataSchema.extend({
-  condition: healthConditionSchema
+  condition: healthConditionSchema,
+  foodName: z.string().optional()
 });
 
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;

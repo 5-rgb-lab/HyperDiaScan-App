@@ -12,6 +12,7 @@ export default function Scanner() {
   const [scannedData, setScannedData] = useState<NutritionData | null>(null);
   const [healthResult, setHealthResult] = useState<HealthPrediction | null>(null);
   const [currentCondition, setCurrentCondition] = useState<'diabetes' | 'hypertension'>('diabetes');
+  const [currentFoodName, setCurrentFoodName] = useState<string>('');
 
   const handleScanComplete = (data: NutritionData) => {
     console.log('Scan completed:', data);
@@ -22,6 +23,7 @@ export default function Scanner() {
   const handleAnalyze = async (data: AnalyzeFoodRequest) => {
     console.log('Analyzing data:', data);
     setCurrentCondition(data.condition);
+    setCurrentFoodName(data.foodName || '');
     
     try {
       const result = await analyzeFood(data);
@@ -63,6 +65,7 @@ export default function Scanner() {
     try {
       await saveScanRecord(user.uid, {
         userId: user.uid,
+        foodName: currentFoodName || undefined,
         nutritionData: scannedData,
         condition: currentCondition,
         prediction: healthResult,
@@ -110,6 +113,7 @@ export default function Scanner() {
               onClick={() => {
                 setScannedData(null);
                 setHealthResult(null);
+                setCurrentFoodName('');
               }}
               className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
               data-testid="button-scan-another"
