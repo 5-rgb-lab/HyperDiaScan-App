@@ -69,7 +69,7 @@ function AuthenticatedApp() {
         onSignOut={signOut}
       />
       
-      <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
+      <main className="container mx-auto px-4 py-6 pb-24">
         <Router />
       </main>
       

@@ -73,7 +73,7 @@ export default function Home() {
   }, [healthTips.length]);
 
   return (
-    <div className="space-y-6 pb-24 md:pb-6">
+    <div className="space-y-6">
       {/* Welcome Header */}
       <div className="text-center space-y-4 py-6">
         <div className="space-y-2">
