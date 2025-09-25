@@ -11,6 +11,7 @@ import AuthForm from "@/components/AuthForm";
 import LandingPage from "@/components/LandingPage";
 import Home from "@/pages/Home";
 import Scanner from "@/pages/Scanner";
+import Chat from "@/pages/Chat";
 import History from "@/pages/History";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
@@ -21,6 +22,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/scanner" component={Scanner} />
+      <Route path="/chat" component={Chat} />
       <Route path="/history" component={History} />
       <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
@@ -61,9 +63,9 @@ function AuthenticatedApp() {
     <div className="min-h-screen bg-background">
       <AppHeader 
         user={{
-          name: user.displayName || userProfile?.name || 'User',
-          email: user.email || '',
-          photoURL: user.photoURL || undefined
+          name: user?.displayName || userProfile?.name || 'User',
+          email: user?.email || '',
+          photoURL: user?.photoURL || undefined
         }}
         onProfileClick={handleProfileClick}
         onSignOut={signOut}
