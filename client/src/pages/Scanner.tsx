@@ -33,29 +33,9 @@ export default function Scanner() {
       console.log('Analysis completed successfully:', result);
       setHealthResult(result);
       
-      // TODO: Temporarily disable Firebase saving to test Flask API connection
       console.log('Analysis result ready for display:', result);
       
-      if (user) {
-        try {
-          await saveScanRecord(user.uid, {
-            userId: user.uid,
-            nutritionData: {
-              calories: data.calories,
-              carbohydrates: data.carbohydrates,
-              protein: data.protein,
-              fat: data.fat,
-              sodium: data.sodium,
-              fiber: data.fiber,
-            },
-            condition: data.condition,
-            prediction: result,
-          });
-          console.log('Scan record saved successfully to Firebase');
-        } catch (saveError) {
-          console.error('Error saving scan record:', saveError);
-        }
-      }
+      
     } catch (error) {
       console.error('Error analyzing food:', error);
     } finally {
@@ -69,7 +49,7 @@ export default function Scanner() {
     try {
       await saveScanRecord(user.uid, {
         userId: user.uid,
-        foodName: currentFoodName || undefined,
+        foodName: currentFoodName || "Unnamed Food", 
         nutritionData: scannedData,
         condition: currentCondition,
         prediction: healthResult,

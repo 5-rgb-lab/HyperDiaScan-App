@@ -60,7 +60,6 @@ export const createUserProfile = async (user: User) => {
       name: user.displayName || 'Unknown User',
       email: user.email || '',
       primaryCondition: 'diabetes',
-      photoURL: user.photoURL || undefined,
     };
     
     await setDoc(userRef, {

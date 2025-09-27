@@ -50,7 +50,7 @@ export const analyzeFood = async (data: AnalyzeFoodRequest): Promise<HealthPredi
     let mappedPrediction: 'safe' | 'moderate' | 'risky';
     if (result.risky === 'Yes' || result.prediction === 1) {
       mappedPrediction = 'risky';
-    } else if (result.prediction === '0' || result.risky === 'No') {
+    } else if (result.prediction === 1 || result.risky === 'No') {
       mappedPrediction = 'safe';
     }else{
       mappedPrediction = 'moderate';
