@@ -5,13 +5,45 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/contexts/AuthContext';
+import { subscribeToUserScanHistory} from '@/lib/firestore';
+
 // Page component for the home page
 export default function Home() {
-  const [recentScans] = useState([
-    { name: 'Greek Yogurt', result: 'safe', time: '2 hours ago' },
-    { name: 'Frozen Pizza', result: 'risky', time: 'Yesterday' },
-    { name: 'Apple', result: 'safe', time: 'Today' },
-  ]);
+  const { user } = useAuth(); // get current logged in user
+  const [recentScans, setRecentScans] = useState<any[]>([]);
+
+  useEffect(() => {
+  if (!user) {
+    setRecentScans([]);
+    return;
+  }
+
+  const unsubscribe = subscribeToUserScanHistory(user.uid, (rawRecords: any[] | null) => {
+    if (!rawRecords || rawRecords.length === 0) {
+      setRecentScans([]);
+      return;
+    }
+
+    // Sort by timestamp descending
+    const sorted = rawRecords
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 3); // take the latest 3
+
+    // Map Firestore records into the UI format
+    const mapped = sorted.map(r => ({
+      name: r.foodName || 'Unknown Food',
+      result: typeof r.prediction === 'string' ? r.prediction : r.prediction?.prediction || 'unknown',
+      time: new Date(r.timestamp).toLocaleString(),
+    }));
+
+    setRecentScans(mapped);
+  });
+
+  return unsubscribe;
+}, [user]);
+
+
 
   const [currentTip, setCurrentTip] = useState(0);
   const [dailyProgress, setDailyProgress] = useState(65);
@@ -185,7 +217,7 @@ export default function Home() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Activity className="w-5 h-5 text-primary" />
-              Recent Activity
+              Recent Scan
             </CardTitle>
           </CardHeader>
           <CardContent>
