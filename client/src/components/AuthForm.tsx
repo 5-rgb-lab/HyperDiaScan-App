@@ -95,12 +95,16 @@ export default function AuthForm() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Activity className="w-8 h-8 text-primary" />
-            <CardTitle className="text-2xl">HyperDiaScan</CardTitle>
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl shadow-lg">
+              <Activity className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+              HyperDiaScan
+            </CardTitle>
           </div>
           <p className="text-muted-foreground">
             Sign in to start analyzing your food for better health management

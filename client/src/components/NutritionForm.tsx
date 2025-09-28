@@ -27,6 +27,7 @@ export default function NutritionForm({ initialData, onAnalyze }: NutritionFormP
       sodium: 0,
       fiber: 0,
       condition: 'diabetes',
+      foodName: '',
       ...initialData
     }
   });
@@ -54,6 +55,26 @@ export default function NutritionForm({ initialData, onAnalyze }: NutritionFormP
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Product Name Field */}
+            <FormField
+              control={form.control}
+              name="foodName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter product name (e.g., Greek Yogurt, Granola Bar)"
+                      {...field}
+                      data-testid="input-food-name"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <Separator />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}

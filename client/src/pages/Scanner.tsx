@@ -12,6 +12,9 @@ export default function Scanner() {
   const [scannedData, setScannedData] = useState<NutritionData | null>(null);
   const [healthResult, setHealthResult] = useState<HealthPrediction | null>(null);
   const [currentCondition, setCurrentCondition] = useState<'diabetes' | 'hypertension'>('diabetes');
+  const [currentFoodName, setCurrentFoodName] = useState<string>('');
+  const [loading, setLoading] = useState(false); 
+
 
   const handleScanComplete = (data: NutritionData) => {
     console.log('Scan completed:', data);
@@ -22,38 +25,21 @@ export default function Scanner() {
   const handleAnalyze = async (data: AnalyzeFoodRequest) => {
     console.log('Analyzing data:', data);
     setCurrentCondition(data.condition);
-    
+    setCurrentFoodName(data.foodName || '');
+    setLoading(true); // show loader
+
     try {
       const result = await analyzeFood(data);
       console.log('Analysis completed successfully:', result);
       setHealthResult(result);
       
-      // TODO: Temporarily disable Firebase saving to test Flask API connection
       console.log('Analysis result ready for display:', result);
       
-      // Save to Firestore if user is authenticated (disabled for API testing)
-      // if (user) {
-      //   try {
-      //     await saveScanRecord(user.uid, {
-      //       userId: user.uid,
-      //       nutritionData: {
-      //         calories: data.calories,
-      //         carbohydrates: data.carbohydrates,
-      //         protein: data.protein,
-      //         fat: data.fat,
-      //         sodium: data.sodium,
-      //         fiber: data.fiber,
-      //       },
-      //       condition: data.condition,
-      //       prediction: result,
-      //     });
-      //     console.log('Scan record saved successfully to Firebase');
-      //   } catch (saveError) {
-      //     console.error('Error saving scan record:', saveError);
-      //   }
-      // }
+      
     } catch (error) {
       console.error('Error analyzing food:', error);
+    } finally {
+      setLoading(false); // hide loader
     }
   };
 
@@ -63,6 +49,7 @@ export default function Scanner() {
     try {
       await saveScanRecord(user.uid, {
         userId: user.uid,
+        foodName: currentFoodName || "Unnamed Food", 
         nutritionData: scannedData,
         condition: currentCondition,
         prediction: healthResult,
@@ -89,10 +76,21 @@ export default function Scanner() {
       )}
 
       {scannedData && !healthResult && (
-        <NutritionForm
-          initialData={scannedData}
-          onAnalyze={handleAnalyze}
-        />
+        <>
+          {loading ? (
+            // Processing card
+            <div className="p-6 rounded-lg shadow-md bg-muted text-center space-y-3">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary mx-auto"></div>
+              <p className="font-medium text-primary">Analyzing your nutrition label...</p>
+              <p className="text-sm text-muted-foreground">This may take a few seconds</p>
+            </div>
+          ) : (
+            <NutritionForm
+              initialData={scannedData}
+              onAnalyze={handleAnalyze}
+            />
+          )}
+        </>
       )}
 
       {healthResult && scannedData && (
@@ -110,6 +108,7 @@ export default function Scanner() {
               onClick={() => {
                 setScannedData(null);
                 setHealthResult(null);
+                setCurrentFoodName('');
               }}
               className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
               data-testid="button-scan-another"

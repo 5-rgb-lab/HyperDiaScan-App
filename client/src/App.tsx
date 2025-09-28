@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,8 +8,10 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppHeader from "@/components/AppHeader";
 import Navigation from "@/components/Navigation";
 import AuthForm from "@/components/AuthForm";
+import LandingPage from "@/components/LandingPage";
 import Home from "@/pages/Home";
 import Scanner from "@/pages/Scanner";
+import Chat from "@/pages/Chat";
 import History from "@/pages/History";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
@@ -19,6 +22,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/scanner" component={Scanner} />
+      <Route path="/chat" component={Chat} />
       <Route path="/history" component={History} />
       <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
@@ -28,6 +32,8 @@ function Router() {
 
 function AuthenticatedApp() {
   const { user, userProfile, loading, signOut } = useAuth();
+  const [showLanding, setShowLanding] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
 
   if (loading) {
     return (
@@ -40,7 +46,11 @@ function AuthenticatedApp() {
     );
   }
 
-  if (!user) {
+  if (!user && showLanding && !showAuth) {
+    return <LandingPage onGetStarted={() => setShowAuth(true)} />;
+  }
+
+  if (!user && showAuth) {
     return <AuthForm />;
   }
 
@@ -53,15 +63,15 @@ function AuthenticatedApp() {
     <div className="min-h-screen bg-background">
       <AppHeader 
         user={{
-          name: user.displayName || userProfile?.name || 'User',
-          email: user.email || '',
-          photoURL: user.photoURL || undefined
+          name: user?.displayName || userProfile?.name || 'User',
+          email: user?.email || '',
+          photoURL: user?.photoURL || undefined
         }}
         onProfileClick={handleProfileClick}
         onSignOut={signOut}
       />
       
-      <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
+      <main className="container mx-auto px-4 py-6 pb-24">
         <Router />
       </main>
       
