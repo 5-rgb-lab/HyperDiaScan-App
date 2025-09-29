@@ -19,9 +19,8 @@ import {
   getFirestore,
 } from "firebase/firestore";
 
-// --- Mock firebase/firestore ---
-jest.mock("firebase/firestore", () => ({
-  getFirestore: jest.fn(() => ({})), // ✅ prevent crash in firebase.ts
+  jest.mock("firebase/firestore", () => ({
+  getFirestore: jest.fn(() => ({})), 
   collection: jest.fn(),
   addDoc: jest.fn(),
   getDocs: jest.fn(),
@@ -52,7 +51,7 @@ describe("scanRecords Firestore helpers", () => {
 
   expect(collection).toHaveBeenCalledWith(expect.anything(), "scanRecords");
   expect(addDoc).toHaveBeenCalledWith(
-    fakeCollectionRef, // ✅ matches what collection() returned
+    fakeCollectionRef, 
     expect.objectContaining({
       userId: fakeUserId,
       condition: "diabetes",
