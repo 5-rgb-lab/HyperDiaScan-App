@@ -42,7 +42,7 @@ describe("Auth Helpers", () => {
     const fakeUser = { uid: "123" };
     (signInWithEmailAndPassword as jest.Mock).mockResolvedValueOnce({ user: fakeUser });
 
-    const user = await signInWithEmail("test@example.com", "password");
+    const user = await signInWithEmail("test@example.com", 1234);
 
     expect(signInWithEmailAndPassword).toHaveBeenCalledWith(auth, "test@example.com", "password");
     expect(user).toEqual(fakeUser);
