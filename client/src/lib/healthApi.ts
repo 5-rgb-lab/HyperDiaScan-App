@@ -1,9 +1,13 @@
 import { AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
+import { ServingInfo } from '@/components/CameraScanner';
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-const FLASK_API_URL = "http://localhost:3000";
+const FLASK_API_URL = isMobile
+  ? "http://192.168.0.104:3000"
+  : "http://localhost:3000";
 
 
-export const analyzeFood = async (data: AnalyzeFoodRequest): Promise<HealthPrediction> => {
+export const analyzeFood = async (data: AnalyzeFoodRequest, servingInfo: ServingInfo = { size: 100, unit: 0 }): Promise<HealthPrediction> => {
   // If no Flask API URL is configured, use fallback analysis directly
   if (!FLASK_API_URL) {
     console.log('No Flask API configured, using fallback analysis');
@@ -31,6 +35,8 @@ export const analyzeFood = async (data: AnalyzeFoodRequest): Promise<HealthPredi
         Fat: data.fat,
         "Sodium Content": data.sodium,
         "Fiber Content": data.fiber,
+        "Serving Size": servingInfo.size,
+        "Serving Size Unit": servingInfo.unit,
         disease: data.condition,
       }),
     });
@@ -70,7 +76,7 @@ export const analyzeFood = async (data: AnalyzeFoodRequest): Promise<HealthPredi
     if (error instanceof Error && error.name === 'AbortError') {
       console.log('Flask API request timed out, using fallback analysis');
     } else {
-      console.log('Flask API unavailable, using fallback analysis');
+      console.log('Flask API unavailable, using fallback analysis', error);
     }
     
     // Fallback to local analysis if Flask API is unavailable

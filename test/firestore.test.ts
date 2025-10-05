@@ -42,7 +42,7 @@ describe("scanRecords Firestore helpers", () => {
   });
 
   it("saves a scan record and returns the doc id", async () => {
-  const fakeCollectionRef = {}; // 🔑 fake collection reference
+  const fakeCollectionRef = {}; 
   (collection as jest.Mock).mockReturnValue(fakeCollectionRef);
 
   (addDoc as jest.Mock).mockResolvedValueOnce({ id: fakeRecordId });

@@ -94,7 +94,6 @@ export default function ScanHistory({ records, onViewDetails, onDeleteRecord }: 
             <SelectContent>
               <SelectItem value="all">All Results</SelectItem>
               <SelectItem value="safe">Safe</SelectItem>
-              <SelectItem value="moderate">Moderate</SelectItem>
               <SelectItem value="risky">Risky</SelectItem>
             </SelectContent>
           </Select>
