@@ -10,10 +10,47 @@ interface CameraScannerProps {
   onScanComplete: (data: NutritionData) => void;
 }
 
+export interface ServingInfo {
+  size?: number;
+  unit?: number;
+}
+
+
 export default function CameraScanner({ onScanComplete }: CameraScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const extractServingInfo = (text: string): ServingInfo => {
+  const lines = text.toLowerCase().split('\n');
+  const servingInfo: ServingInfo = {};
+
+  lines.forEach(line => {
+    if (line.includes('serving size')) {
+      // Try to match a number followed by g or ml first
+      let match = line.match(/([\d.]+)\s*(g|ml)/i);
+      if (match) {
+        servingInfo.size = parseFloat(match[1]);
+        servingInfo.unit = match[2].toLowerCase() === 'ml' ? 1 : 0;
+        return;
+      }
+
+      // Fallback: match first number and unit word
+      match = line.match(/([\d.]+)\s*([a-zA-Z]+)/);
+      if (match) {
+        servingInfo.size = parseFloat(match[1]);
+        const unitStr = match[2].toLowerCase();
+        servingInfo.unit = unitStr === 'ml' ? 1 : 0;
+      }
+    }
+  });
+
+  if (servingInfo.size === undefined) servingInfo.size = 100;
+  if (servingInfo.unit === undefined) servingInfo.unit = 0; 
+
+  return servingInfo;
+};
+
 
   const extractNutritionData = (text: string): NutritionData => {
     // Simple OCR text parsing for nutrition facts
@@ -58,6 +95,10 @@ export default function CameraScanner({ onScanComplete }: CameraScannerProps) {
         logger: () => {} // Suppress logs
       });
       
+      // Extract serving info 
+      const servingInfo = extractServingInfo(result.data.text);
+      console.log('Serving info:', servingInfo);
+
       const nutritionData = extractNutritionData(result.data.text);
       onScanComplete(nutritionData);
       
@@ -89,33 +130,34 @@ export default function CameraScanner({ onScanComplete }: CameraScannerProps) {
 
       <div className="space-y-3">
         <Button 
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isScanning}
-          className="w-full"
-          data-testid="button-upload-image"
-        >
-          {isScanning ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Scanning...
-            </>
-          ) : scanComplete ? (
-            <>
-              <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-              Scan Complete
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Image
-            </>
-          )}
-        </Button>
+  onClick={() => fileInputRef.current?.click()}
+  disabled={isScanning}
+  className="w-full"
+>
+  {isScanning ? (
+    <>
+      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      Scanning...
+    </>
+  ) : scanComplete ? (
+    <>
+      <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+      Scan Complete
+    </>
+  ) : (
+    <>
+      <Camera className="w-4 h-4 mr-2" />
+      Take Photo
+    </>
+  )}
+</Button>
+
 
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           onChange={handleFileSelect}
           className="hidden"
           data-testid="input-file-upload"
