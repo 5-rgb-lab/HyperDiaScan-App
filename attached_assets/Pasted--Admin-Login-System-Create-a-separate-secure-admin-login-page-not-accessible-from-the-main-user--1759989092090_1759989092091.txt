@@ -1,0 +1,97 @@
+🔐 Admin Login System
+
+Create a separate secure admin login page (not accessible from the main user app).
+
+Implement Firebase Authentication for admin accounts only.
+
+Admin credentials should be verified by role-based access control (example: role: "admin" stored in Firebase).
+
+Add JWT or session-based security for admin sessions (to prevent unauthorized access).
+
+Admin login should have protection from:
+
+Direct URL access without authentication
+
+Brute-force attacks (limit login attempts)
+
+Session timeout after inactivity
+
+🧾 Admin Dashboard Main Page
+
+Once logged in, the admin should see a dashboard with:
+
+Total registered users count
+
+Total scans performed
+
+Recent activity logs (most recent scans, logins, deletions, etc.)
+
+Search and filter bar to find user activities by email or date
+
+Export logs button → Export all activity logs as .csv or .xlsx
+
+📋 Logs & Activity Tracking
+
+Track and store in Firebase:
+
+User login/logout timestamps
+
+Each nutritional label scan (date/time + nutrients analyzed)
+
+Manual data entries
+
+Deleted history entries
+
+AI result categories (Safe, Borderline, Risky)
+
+Display all logs in a data table with columns like:
+
+User Email
+
+Activity Type (Scan, Delete, Login, etc.)
+
+Timestamp
+
+Condition (Diabetes/Hypertension)
+
+Risk Result (Safe/Borderline/Risky)
+
+Each log row should have:
+
+View Details button (to see nutrition data extracted from OCR)
+
+Delete Log option (for admin maintenance)
+
+⚙️ Admin Dashboard UI
+
+Use React + TailwindCSS for the frontend
+
+Theme color: Dark green & white for consistency
+
+Layout: Sidebar navigation with items:
+
+Dashboard (overview)
+
+Users
+
+Logs
+
+Settings
+
+Logout
+
+Top bar should show admin name and profile icon
+
+Make it responsive and professional
+
+🔒 Security Features
+
+Only verified admin accounts (with role “admin”) can access /admin routes
+
+Add middleware on backend to protect admin routes
+
+Ensure frontend routes for admin pages are guarded by authentication check
+
+Sanitize all user data before displaying in admin dashboard
+
+Use HTTPS and environment variables (.env) for API keys and Firebase credentials

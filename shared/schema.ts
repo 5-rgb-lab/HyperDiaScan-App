@@ -20,6 +20,9 @@ export const healthPredictionSchema = z.object({
   reasoning: z.string(),
 });
 
+// User role schema
+export const userRoleSchema = z.enum(['user', 'admin']);
+
 // User profile schema
 export const userProfileSchema = z.object({
   name: z.string().min(2),
@@ -28,6 +31,7 @@ export const userProfileSchema = z.object({
   primaryCondition: healthConditionSchema,
   emergencyContact: z.string().optional(),
   photoURL: z.string().url().optional(),
+  role: userRoleSchema.default('user').optional(),
 });
 
 // Scan record schema
@@ -51,6 +55,39 @@ export const firebaseUserSchema = z.object({
   emailVerified: z.boolean(),
 });
 
+// Activity log schema
+export const activityTypeSchema = z.enum([
+  'login',
+  'logout',
+  'scan',
+  'manual_entry',
+  'delete_scan',
+  'update_profile',
+  'signup'
+]);
+
+export const activityLogSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  userEmail: z.string().email(),
+  activityType: activityTypeSchema,
+  timestamp: z.string().datetime(),
+  details: z.record(z.any()).optional(),
+  riskResult: z.enum(['safe', 'moderate', 'risky']).optional(),
+  condition: healthConditionSchema.optional(),
+});
+
+// Admin stats schema
+export const adminStatsSchema = z.object({
+  totalUsers: z.number(),
+  totalScans: z.number(),
+  recentActivity: z.array(activityLogSchema),
+  usersByCondition: z.object({
+    diabetes: z.number(),
+    hypertension: z.number(),
+  }),
+});
+
 // Type exports
 export type NutritionData = z.infer<typeof nutritionDataSchema>;
 export type HealthCondition = z.infer<typeof healthConditionSchema>;
@@ -58,6 +95,10 @@ export type HealthPrediction = z.infer<typeof healthPredictionSchema>;
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type ScanRecord = z.infer<typeof scanRecordSchema>;
 export type FirebaseUser = z.infer<typeof firebaseUserSchema>;
+export type UserRole = z.infer<typeof userRoleSchema>;
+export type ActivityType = z.infer<typeof activityTypeSchema>;
+export type ActivityLog = z.infer<typeof activityLogSchema>;
+export type AdminStats = z.infer<typeof adminStatsSchema>;
 
 // Insert schemas for forms
 export const insertUserProfileSchema = userProfileSchema.omit({});

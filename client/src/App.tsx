@@ -14,6 +14,7 @@ import Scanner from "@/pages/Scanner";
 import Chat from "@/pages/Chat";
 import History from "@/pages/History";
 import Profile from "@/pages/Profile";
+import AdminApp from "@/pages/admin/AdminApp";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/chat" component={Chat} />
       <Route path="/history" component={History} />
       <Route path="/profile" component={Profile} />
+      <Route path="/admin" component={AdminApp} />
       <Route component={NotFound} />
     </Switch>
   );
