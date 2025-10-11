@@ -3,8 +3,8 @@ import { ServingInfo } from '@/components/CameraScanner';
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
 const FLASK_API_URL = isMobile
-  ? "http://192.168.0.104:3000"
-  : "http://localhost:3000";
+  ? import.meta.env.VITE_FLASK_API_URL_MOBILE
+  : import.meta.env.VITE_FLASK_API_URL_DESKTOP;
 
 
 export const analyzeFood = async (data: AnalyzeFoodRequest, servingInfo: ServingInfo = { size: 100, unit: 0 }): Promise<HealthPrediction> => {
@@ -26,6 +26,7 @@ export const analyzeFood = async (data: AnalyzeFoodRequest, servingInfo: Serving
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Authorization': `Bearer ${import.meta.env.VITE_FLASK_API_KEY}`,
       },
       signal: controller.signal,
       body: JSON.stringify({
