@@ -1,78 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, History, Zap, Shield, Clock, User, TrendingUp, Activity, Heart, Target, Star } from 'lucide-react';
+import {
+  Camera,
+  History,
+  Shield,
+  User,
+  TrendingUp,
+  Activity,
+  Heart,
+  Target,
+  Star,
+} from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { subscribeToUserScanHistory} from '@/lib/firestore';
+import { subscribeToUserScanHistory } from '@/lib/firestore';
 
-// Page component for the home page
 export default function Home() {
-  const { user } = useAuth(); // get current logged in user
+  const { user } = useAuth();
   const [recentScans, setRecentScans] = useState<any[]>([]);
+  const [dailyStats, setDailyStats] = useState({
+    scansToday: 0,
+    safeScans: 0,
+    riskyScans: 0,
+    totalScans: 0,
+  });
+  const [dailyProgress, setDailyProgress] = useState(0);
 
+  // Fetch + listen to Firestore user data
   useEffect(() => {
-  if (!user) {
-    setRecentScans([]);
-    return;
-  }
-
-  const unsubscribe = subscribeToUserScanHistory(user.uid, (rawRecords: any[] | null) => {
-    if (!rawRecords || rawRecords.length === 0) {
+    if (!user) {
       setRecentScans([]);
+      setDailyStats({ scansToday: 0, safeScans: 0, riskyScans: 0, totalScans: 0 });
       return;
     }
 
-    // Sort by timestamp descending
-    const sorted = rawRecords
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 3); // take the latest 3
+    const unsubscribe = subscribeToUserScanHistory(user.uid, (rawRecords: any[] | null) => {
+      if (!rawRecords || rawRecords.length === 0) {
+        setRecentScans([]);
+        setDailyStats({ scansToday: 0, safeScans: 0, riskyScans: 0, totalScans: 0 });
+        return;
+      }
 
-    // Map Firestore records into the UI format
-    const mapped = sorted.map(r => ({
-      name: r.foodName || 'Unknown Food',
-      result: typeof r.prediction === 'string' ? r.prediction : r.prediction?.prediction || 'unknown',
-      time: new Date(r.timestamp).toLocaleString(),
-    }));
+      // Sort and slice for recent scans
+      const sorted = rawRecords
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 3);
 
-    setRecentScans(mapped);
-  });
+      const mapped = sorted.map((r) => ({
+        name: r.foodName || 'Unknown Food',
+        result: typeof r.prediction === 'string' ? r.prediction : r.prediction?.prediction || 'unknown',
+        time: new Date(r.timestamp).toLocaleString(),
+      }));
 
-  return unsubscribe;
-}, [user]);
+      setRecentScans(mapped);
 
+      // --- Daily Summary Calculations ---
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
+      const scansToday = rawRecords.filter((r) => new Date(r.timestamp) >= startOfDay).length;
+      const safeScans = rawRecords.filter(
+        (r) => (r.prediction?.prediction || r.prediction) === 'safe'
+      ).length;
+      const riskyScans = rawRecords.filter(
+        (r) => (r.prediction?.prediction || r.prediction) === 'risky'
+      ).length;
+      const totalScans = rawRecords.length;
 
+      setDailyStats({ scansToday, safeScans, riskyScans, totalScans });
+
+      // Progress: percentage of scans today vs total
+      const progress = totalScans > 0 ? Math.min((scansToday / totalScans) * 100, 100) : 0;
+      setDailyProgress(progress);
+    });
+
+    return unsubscribe;
+  }, [user]);
+
+  const getResultColor = (result: string) => {
+    switch (result) {
+      case 'safe':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'risky':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    }
+  };
+
+  // Health tips rotation
   const [currentTip, setCurrentTip] = useState(0);
-  const [dailyProgress, setDailyProgress] = useState(65);
-
   const healthTips = [
     {
       icon: Heart,
       title: 'Heart Health Tip',
-      content: 'Choose foods low in saturated fats and trans fats. Opt for lean proteins like fish, poultry, and legumes.',
-      color: 'from-red-500 to-pink-500'
+      content:
+        'Choose foods low in saturated fats and trans fats. Opt for lean proteins like fish, poultry, and legumes.',
+      color: 'from-red-500 to-pink-500',
     },
     {
       icon: Target,
       title: 'Blood Sugar Management',
-      content: 'Pair carbohydrates with protein or healthy fats to help stabilize blood sugar levels throughout the day.',
-      color: 'from-blue-500 to-indigo-500'
+      content:
+        'Pair carbohydrates with protein or healthy fats to help stabilize blood sugar levels throughout the day.',
+      color: 'from-blue-500 to-indigo-500',
     },
     {
       icon: Shield,
       title: 'Sodium Awareness',
-      content: 'Read nutrition labels carefully. Aim for less than 2,300mg of sodium per day to support healthy blood pressure.',
-      color: 'from-green-500 to-teal-500'
+      content:
+        'Read nutrition labels carefully. Aim for less than 2,300mg of sodium per day to support healthy blood pressure.',
+      color: 'from-green-500 to-teal-500',
     },
     {
       icon: Star,
       title: 'Portion Control',
-      content: 'Use smaller plates and bowls to naturally reduce portion sizes while still feeling satisfied with your meals.',
-      color: 'from-yellow-500 to-orange-500'
-    }
+      content:
+        'Use smaller plates and bowls to naturally reduce portion sizes while still feeling satisfied with your meals.',
+      color: 'from-yellow-500 to-orange-500',
+    },
   ];
 
   const quickActions = [
@@ -81,22 +130,6 @@ export default function Home() {
     { icon: User, title: 'Update Profile', href: '/profile', color: 'from-green-500 to-emerald-500' },
   ];
 
-  const dailyStats = {
-    scansToday: 3,
-    safeScans: 2,
-    riskyScans: 1,
-    weeklyGoal: 10
-  };
-
-  const getResultColor = (result: string) => {
-    switch (result) {
-      case 'safe': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'risky': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-    }
-  };
-
-  // Rotate health tips every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % healthTips.length);
@@ -109,7 +142,7 @@ export default function Home() {
       {/* Welcome Header */}
       <div className="text-center space-y-4 py-6">
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent" data-testid="text-hero-title">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
             Welcome Back!
           </h1>
           <p className="text-lg text-muted-foreground">
@@ -118,7 +151,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Daily Summary Card */}
+      {/* Daily Summary */}
       <Card className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-950/50 dark:to-green-950/50 border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -141,14 +174,14 @@ export default function Home() {
               <div className="text-sm text-muted-foreground">Risky Foods</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{dailyStats.weeklyGoal}</div>
-              <div className="text-sm text-muted-foreground">Weekly Goal</div>
+              <div className="text-2xl font-bold text-purple-600">{dailyStats.totalScans}</div>
+              <div className="text-sm text-muted-foreground">Total Scans</div>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Progress to Weekly Goal</span>
-              <span>{dailyProgress}%</span>
+              <span>Progress to Daily Goal</span>
+              <span>{Math.round(dailyProgress)}%</span>
             </div>
             <Progress value={dailyProgress} className="h-2" />
           </div>
@@ -181,17 +214,17 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Health Insights & Tips - Rotating */}
+      {/* Health Insights & Tips */}
       <Card className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-blue-950/50 border-0 shadow-lg">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className={`p-3 rounded-xl bg-gradient-to-br ${healthTips[currentTip].color} shadow-lg flex-shrink-0`}>
-              {React.createElement(healthTips[currentTip].icon, { className: "w-6 h-6 text-white" })}
+            <div
+              className={`p-3 rounded-xl bg-gradient-to-br ${healthTips[currentTip].color} shadow-lg flex-shrink-0`}
+            >
+              {React.createElement(healthTips[currentTip].icon, { className: 'w-6 h-6 text-white' })}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-2">
-                {healthTips[currentTip].title}
-              </h3>
+              <h3 className="font-semibold text-foreground mb-2">{healthTips[currentTip].title}</h3>
               <p className="text-muted-foreground leading-relaxed">
                 {healthTips[currentTip].content}
               </p>
@@ -223,11 +256,12 @@ export default function Home() {
           <CardContent>
             <div className="space-y-3">
               {recentScans.map((scan, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors duration-200">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors duration-200"
+                >
                   <div>
-                    <p className="font-medium text-foreground" data-testid={`text-recent-scan-${index}`}>
-                      {scan.name}
-                    </p>
+                    <p className="font-medium text-foreground">{scan.name}</p>
                     <p className="text-sm text-muted-foreground">{scan.time}</p>
                   </div>
                   <Badge variant="secondary" className={`${getResultColor(scan.result)} border-0`}>
@@ -237,7 +271,10 @@ export default function Home() {
               ))}
             </div>
             <Link href="/history">
-              <Button variant="outline" className="w-full mt-4 hover:bg-primary hover:text-primary-foreground transition-colors duration-300" data-testid="button-see-all-scans">
+              <Button
+                variant="outline"
+                className="w-full mt-4 hover:bg-primary hover:text-primary-foreground transition-colors duration-300"
+              >
                 See All Scans
                 <History className="w-4 h-4 ml-2" />
               </Button>
