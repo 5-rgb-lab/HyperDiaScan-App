@@ -32,8 +32,6 @@ function Router() {
 
 function AuthenticatedApp() {
   const { user, userProfile, loading, signOut } = useAuth();
-  const [showLanding, setShowLanding] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
 
   if (loading) {
     return (
@@ -46,11 +44,7 @@ function AuthenticatedApp() {
     );
   }
 
-  if (!user && showLanding && !showAuth) {
-    return <LandingPage onGetStarted={() => setShowAuth(true)} />;
-  }
-
-  if (!user && showAuth) {
+  if (!user) {
     return <AuthForm />;
   }
 
