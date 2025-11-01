@@ -142,7 +142,6 @@ export const scanRecordSchema = z.object({
   nutritionData: nutritionDataSchema,
   condition: healthConditionSchema,
   prediction: healthPredictionSchema,
-  imageUrl: z.string().url().optional(),
 });
 
 // ----------------------------------------------------

@@ -26,6 +26,7 @@ export default function NutritionForm({ initialData, onAnalyze }: NutritionFormP
       fat: 0,
       sodium: 0,
       fiber: 0,
+      sugar: 0,
       condition: 'diabetes',
       foodName: '',
       ...initialData
@@ -178,6 +179,25 @@ export default function NutritionForm({ initialData, onAnalyze }: NutritionFormP
                         {...field}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         data-testid="input-fiber"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+
+              <FormField
+                control={form.control}
+                name="sugar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sugar (g)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        data-testid="input-sugar"
                       />
                     </FormControl>
                   </FormItem>

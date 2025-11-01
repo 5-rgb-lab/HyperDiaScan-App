@@ -11,8 +11,7 @@ interface ScanRecord {
   id: string;
   date: string;
   condition: 'diabetes' | 'hypertension';
-  prediction: 'safe' | 'moderate' | 'risky';
-  confidence: number;
+  prediction: 'safe' |'risky';
   foodName?: string;
   nutritionData: {
     calories: number;
@@ -119,9 +118,6 @@ export default function ScanHistory({ records, onViewDetails, onDeleteRecord }: 
                       <Badge variant="outline">
                         {record.condition === 'diabetes' ? 'Diabetes' : 'Hypertension'}
                       </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {record.confidence}% confidence
-                      </span>
                     </div>
                     
                     {record.foodName && (
