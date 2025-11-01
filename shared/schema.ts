@@ -104,15 +104,6 @@ export const demographicsSchema = z.object({
   weightGoal: z.enum(["Maintain", "Lose", "Gain"]).optional(),
 });
 
-// 7️⃣ Comorbidities, Allergies & Dietary Patterns
-export const healthBackgroundSchema = z.object({
-  otherHealthConditions: z.array(z.string()),
-  foodAllergies: z.array(z.string()),
-  allergySeverity: z.enum(["Mild", "Moderate", "Severe"]).optional(),
-  dietaryPattern: z
-    .enum(["Omnivore", "Vegetarian", "Vegan", "Pescatarian", "Low-FODMAP"])
-    .optional(),
-});
 
 // ----------------------------------------------------
 // 🧩 Combined User Profile Schema (for full form or Firestore document)
@@ -128,7 +119,6 @@ export const userProfileSchema = z.object({
   treatmentManagement: treatmentManagementSchema,
   nutrientTargets: nutrientTargetsSchema,
   demographics: demographicsSchema,
-  healthBackground: healthBackgroundSchema,
 });
 
 // ----------------------------------------------------
@@ -167,7 +157,6 @@ export type HypertensionStatus = z.infer<typeof hypertensionStatusSchema>;
 export type TreatmentManagement = z.infer<typeof treatmentManagementSchema>;
 export type NutrientTargets = z.infer<typeof nutrientTargetsSchema>;
 export type Demographics = z.infer<typeof demographicsSchema>;
-export type HealthBackground = z.infer<typeof healthBackgroundSchema>;
 
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type ScanRecord = z.infer<typeof scanRecordSchema>;

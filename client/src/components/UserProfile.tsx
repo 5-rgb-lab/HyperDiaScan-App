@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { updateUserProfile } from '@/lib/auth';
+import { useState, useEffect } from 'react';
+import { updateUserProfile, getUserProfile } from '@/lib/auth';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from '@/components/ui/switch';
 
 import { 
   type UserProfile as UserProfileType,
@@ -46,6 +46,8 @@ interface UserProfileProps {
 
 export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [profileLoaded, setProfileLoaded] = useState<UserProfileType | null>(null);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(userProfileSchema),
@@ -89,24 +91,83 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
         weightKg: 70,
         activityLevel: 'Sedentary',
       },
-      healthBackground: user?.profile?.healthBackground || {
-        otherHealthConditions: [],
-        foodAllergies: [],
-      },
     }
   });
+
+  // Fetch profile from Firestore when user.id becomes available
+  useEffect(() => {
+    let mounted = true;
+    async function loadProfile() {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await getUserProfile(user.id);
+        if (mounted && data) {
+          // merge data with defaults to avoid missing fields
+          form.reset({
+            name: data.name ?? user.name ?? '',
+            email: data.email ?? user.email ?? '',
+            age: data.age ?? 18,
+            primaryCondition: data.primaryCondition ?? 'diabetes',
+            primaryMedical: data.primaryMedical ?? { diabetesType: 'None', hypertensionType: 'None' },
+            diabetesStatus: data.diabetesStatus ?? { latestHbA1c: 0, hypoglycemiaFrequency: 'Rare' },
+            hypertensionStatus: data.hypertensionStatus ?? { currentBP: { systolic: 120, diastolic: 80 }, useOfDiuretic: false },
+            treatmentManagement: data.treatmentManagement ?? {
+              diabetesManagement: { insulinUse: false, oralMedications: [] },
+              hypertensionManagement: { antihypertensiveMeds: [] },
+            },
+            nutrientTargets: data.nutrientTargets ?? {
+              dailyCalorieTarget: 2000,
+              dailyCarbLimit: 200,
+              dailySodiumLimit: 2300,
+              dailySatFatLimit: 20,
+              fastingGlucoseTarget: '80-100',
+              postMealGlucoseTarget: '100-140',
+            },
+            demographics: data.demographics ?? {
+              biologicalSex: 'Other',
+              heightCm: 170,
+              weightKg: 70,
+              activityLevel: 'Sedentary',
+            },
+          });
+          setProfileLoaded(data);
+        }
+      } catch (err) {
+        console.error('Error fetching profile from Firestore:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadProfile();
+    return () => { mounted = false; };
+  }, [user?.id]);
 
   const onSubmit = async (data: ProfileFormData) => {
     console.log('Saving profile:', data);
     if (user?.id) {
       try {
+        setLoading(true);
         await updateUserProfile(user.id, data);
+        // keep local copy
+        setProfileLoaded(data as UserProfileType);
+        // call parent callback
+        onSaveProfile(data);
+        setIsEditing(false);
+        console.log('Profile saved to Firestore');
       } catch (error) {
         console.error('Error saving to Firestore:', error);
+      } finally {
+        setLoading(false);
       }
+    } else {
+      // fallback: still call onSaveProfile (so UI can react)
+      onSaveProfile(data);
+      setIsEditing(false);
     }
-    onSaveProfile(data);
-    setIsEditing(false);
   };
 
   const getConditionBadge = (condition: string) => {
@@ -121,12 +182,14 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
     switch (condition) {
       case 'diabetes': return 'Diabetes';
       case 'hypertension': return 'Hypertension';
+      case 'both': return 'Both';
       default: return condition;
     }
   };
 
   const calculateBMI = (weight: number, height: number) => {
     const heightInMeters = height / 100;
+    if (!heightInMeters) return '0.0';
     return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
@@ -143,6 +206,16 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
         <CardContent>
           <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Please sign in to view your profile</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Card className="text-center p-8">
+        <CardContent>
+          <p className="text-muted-foreground">Loading profile...</p>
         </CardContent>
       </Card>
     );
@@ -189,21 +262,21 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                 </div>
               </div>
 
-              {user.profile && (
+              {profileLoaded && (
                 <>
                   <Separator />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Age</label>
                       <p className="text-sm" data-testid="text-user-age">
-                        {user.profile.age} years old
+                        {profileLoaded.age} years old
                       </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Primary Condition</label>
                       <div className="mt-1">
-                        <Badge className={getConditionBadge(user.profile.primaryCondition)}>
-                          {getConditionText(user.profile.primaryCondition)}
+                        <Badge className={getConditionBadge(profileLoaded.primaryCondition)}>
+                          {getConditionText(profileLoaded.primaryCondition)}
                         </Badge>
                       </div>
                     </div>
@@ -222,11 +295,11 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Diabetes Type</h4>
-                                  <p className="text-sm">{user.profile?.primaryMedical.diabetesType}</p>
+                                  <p className="text-sm">{profileLoaded?.primaryMedical?.diabetesType}</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Hypertension Type</h4>
-                                  <p className="text-sm">{user.profile?.primaryMedical.hypertensionType}</p>
+                                  <p className="text-sm">{profileLoaded?.primaryMedical?.hypertensionType}</p>
                                 </div>
                               </div>
                             </div>
@@ -246,11 +319,11 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Biological Sex</h4>
-                                  <p className="text-sm">{user.profile?.demographics.biologicalSex}</p>
+                                  <p className="text-sm">{profileLoaded?.demographics?.biologicalSex}</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Activity Level</h4>
-                                  <p className="text-sm">{user.profile?.demographics.activityLevel}</p>
+                                  <p className="text-sm">{profileLoaded?.demographics?.activityLevel}</p>
                                 </div>
                               </div>
 
@@ -263,14 +336,14 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                                       <h4 className="font-semibold text-blue-900">BMI Calculator</h4>
                                       <div className="mt-2 space-y-1">
                                         <p className="text-sm text-blue-800">
-                                          Height: {user.profile?.demographics.heightCm} cm | Weight: {user.profile?.demographics.weightKg} kg
+                                          Height: {profileLoaded?.demographics?.heightCm} cm | Weight: {profileLoaded?.demographics?.weightKg} kg
                                         </p>
                                         <div className="flex items-center gap-2">
                                           <span className="text-lg font-bold text-blue-900">
-                                            BMI: {calculateBMI(user.profile?.demographics.weightKg || 0, user.profile?.demographics.heightCm || 0)}
+                                            BMI: {calculateBMI(profileLoaded?.demographics?.weightKg || 0, profileLoaded?.demographics?.heightCm || 0)}
                                           </span>
-                                          <span className={`text-sm font-medium ${getBMICategory(parseFloat(calculateBMI(user.profile?.demographics.weightKg || 0, user.profile?.demographics.heightCm || 0))).color}`}>
-                                            ({getBMICategory(parseFloat(calculateBMI(user.profile?.demographics.weightKg || 0, user.profile?.demographics.heightCm || 0))).category})
+                                          <span className={`text-sm font-medium ${getBMICategory(parseFloat(calculateBMI(profileLoaded?.demographics?.weightKg || 0, profileLoaded?.demographics?.heightCm || 0))).color}`}>
+                                            ({getBMICategory(parseFloat(calculateBMI(profileLoaded?.demographics?.weightKg || 0, profileLoaded?.demographics?.heightCm || 0))).category})
                                           </span>
                                         </div>
                                       </div>
@@ -297,10 +370,10 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                                 <h4 className="text-sm font-medium mb-2">Diabetes Management</h4>
                                 <div className="space-y-2">
                                   <p className="text-sm">
-                                    Insulin: {user.profile?.treatmentManagement.diabetesManagement.insulinUse ? 'Yes' : 'No'}
+                                    Insulin: {profileLoaded?.treatmentManagement?.diabetesManagement?.insulinUse ? 'Yes' : 'No'}
                                   </p>
                                   <p className="text-sm">
-                                    Medications: {user.profile?.treatmentManagement.diabetesManagement.oralMedications.join(', ') || 'None'}
+                                    Medications: {profileLoaded?.treatmentManagement?.diabetesManagement?.oralMedications?.join(', ') || 'None'}
                                   </p>
                                 </div>
                               </div>
@@ -309,42 +382,13 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                               <div>
                                 <h4 className="text-sm font-medium mb-2">Hypertension Management</h4>
                                 <p className="text-sm">
-                                  Medications: {user.profile?.treatmentManagement.hypertensionManagement.antihypertensiveMeds.join(', ') || 'None'}
+                                  Medications: {profileLoaded?.treatmentManagement?.hypertensionManagement?.antihypertensiveMeds?.join(', ') || 'None'}
                                 </p>
                               </div>
                             </div>
                           </AccordionContent>
                         </AccordionItem>
 
-                        {/* Health Background */}
-                        <AccordionItem value="background">
-                          <AccordionTrigger className="text-left">
-                            <div className="flex items-center gap-2">
-                              <AlertCircle className="h-4 w-4 text-primary" />
-                              <span>Health Background</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="p-4 space-y-4">
-                              <div>
-                                <h4 className="text-sm font-medium mb-2">Other Health Conditions</h4>
-                                <p className="text-sm">
-                                  {user.profile?.healthBackground.otherHealthConditions.length 
-                                    ? user.profile.healthBackground.otherHealthConditions.join(', ')
-                                    : 'None reported'}
-                                </p>
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium mb-2">Food Allergies</h4>
-                                <p className="text-sm">
-                                  {user.profile?.healthBackground.foodAllergies.length 
-                                    ? user.profile.healthBackground.foodAllergies.join(', ')
-                                    : 'None reported'}
-                                </p>
-                              </div>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
 
                         {/* Nutrient Targets */}
                         <AccordionItem value="targets">
@@ -359,19 +403,19 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Daily Calories</h4>
-                                  <p className="text-sm">{user.profile?.nutrientTargets.dailyCalorieTarget} kcal</p>
+                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailyCalorieTarget} kcal</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Carb Limit</h4>
-                                  <p className="text-sm">{user.profile?.nutrientTargets.dailyCarbLimit}g</p>
+                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailyCarbLimit}g</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Sodium Limit</h4>
-                                  <p className="text-sm">{user.profile?.nutrientTargets.dailySodiumLimit}mg</p>
+                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailySodiumLimit}mg</p>
                                 </div>
                                 <div>
                                   <h4 className="text-sm font-medium mb-1">Saturated Fat Limit</h4>
-                                  <p className="text-sm">{user.profile?.nutrientTargets.dailySatFatLimit}g</p>
+                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailySatFatLimit}g</p>
                                 </div>
                               </div>
                             </div>
@@ -485,18 +529,20 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Biological Sex</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Male">Male</SelectItem>
-                                  <SelectItem value="Female">Female</SelectItem>
-                                  <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="Male">Male</SelectItem>
+                                    <SelectItem value="Female">Female</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -544,19 +590,21 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Activity Level</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Sedentary">Sedentary</SelectItem>
-                                  <SelectItem value="Lightly Active">Lightly Active</SelectItem>
-                                  <SelectItem value="Moderate">Moderate</SelectItem>
-                                  <SelectItem value="Very Active">Very Active</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="Sedentary">Sedentary</SelectItem>
+                                    <SelectItem value="Lightly Active">Lightly Active</SelectItem>
+                                    <SelectItem value="Moderate">Moderate</SelectItem>
+                                    <SelectItem value="Very Active">Very Active</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -575,111 +623,122 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="p-4 grid grid-cols-1 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="primaryMedical.diabetesType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Diabetes Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="None">None</SelectItem>
-                                  <SelectItem value="Type 1">Type 1</SelectItem>
-                                  <SelectItem value="Type 2">Type 2</SelectItem>
-                                  <SelectItem value="Gestational">Gestational</SelectItem>
-                                  <SelectItem value="Pre-diabetes">Pre-diabetes</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {/* Diabetes section */}
+                        {(form.watch('primaryCondition') === 'diabetes' || form.watch('primaryCondition') === 'both') && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name="primaryMedical.diabetesType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Diabetes Type</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="None">None</SelectItem>
+                                      <SelectItem value="Type 1">Type 1</SelectItem>
+                                      <SelectItem value="Type 2">Type 2</SelectItem>
+                                      <SelectItem value="Gestational">Gestational</SelectItem>
+                                      <SelectItem value="Pre-diabetes">Pre-diabetes</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
 
-                        <FormField
-                          control={form.control}
-                          name="primaryMedical.hypertensionType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Hypertension Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="None">None</SelectItem>
-                                  <SelectItem value="Primary">Primary</SelectItem>
-                                  <SelectItem value="Secondary">Secondary</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                            <FormField
+                              control={form.control}
+                              name="diabetesStatus.latestHbA1c"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Latest HbA1c</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
 
-                        <FormField
-                          control={form.control}
-                          name="diabetesStatus.latestHbA1c"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Latest HbA1c</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        {/* Hypertension section */}
+                        {(form.watch('primaryCondition') === 'hypertension' || form.watch('primaryCondition') === 'both') && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name="primaryMedical.hypertensionType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Hypertension Type</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="None">None</SelectItem>
+                                      <SelectItem value="Primary">Primary</SelectItem>
+                                      <SelectItem value="Secondary">Secondary</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
 
-                        <FormField
-                          control={form.control}
-                          name="hypertensionStatus.currentBP.systolic"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Current Systolic BP</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                            <FormField
+                              control={form.control}
+                              name="hypertensionStatus.currentBP.systolic"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Current Systolic BP</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
 
-                        <FormField
-                          control={form.control}
-                          name="hypertensionStatus.currentBP.diastolic"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Current Diastolic BP</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                            <FormField
+                              control={form.control}
+                              name="hypertensionStatus.currentBP.diastolic"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Current Diastolic BP</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      {...field}
+                                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
+
 
                   {/* Treatment */}
                   <AccordionItem value="treatment">
@@ -691,55 +750,60 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="p-4 space-y-6">
-                        <div className="space-y-4">
-                          <h4 className="text-sm font-medium">Diabetes Management</h4>
-                          <FormField
-                            control={form.control}
-                            name="treatmentManagement.diabetesManagement.insulinUse"
-                            render={({ field }) => (
-                              <FormItem className="flex items-center justify-between">
-                                <FormLabel>Insulin Use</FormLabel>
-                                <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-4">
-                          <h4 className="text-sm font-medium">Hypertension Management</h4>
-                          <FormField
-                            control={form.control}
-                            name="treatmentManagement.hypertensionManagement.medicationTiming"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Medication Timing</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        {/* Diabetes Management */}
+                        {(form.watch('primaryCondition') === 'diabetes' || form.watch('primaryCondition') === 'both') && (
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-medium">Diabetes Management</h4>
+                            <FormField
+                              control={form.control}
+                              name="treatmentManagement.diabetesManagement.insulinUse"
+                              render={({ field }) => (
+                                <FormItem className="flex items-center justify-between">
+                                  <FormLabel>Insulin Use</FormLabel>
                                   <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
                                   </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="Morning">Morning</SelectItem>
-                                    <SelectItem value="Evening">Evening</SelectItem>
-                                    <SelectItem value="Both">Both</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        )}
+
+                        {/* Hypertension Management */}
+                        {(form.watch('primaryCondition') === 'hypertension' || form.watch('primaryCondition') === 'both') && (
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-medium">Hypertension Management</h4>
+                            <FormField
+                              control={form.control}
+                              name="treatmentManagement.hypertensionManagement.medicationTiming"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Medication Timing</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Morning">Morning</SelectItem>
+                                      <SelectItem value="Evening">Evening</SelectItem>
+                                      <SelectItem value="Both">Both</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
+
 
                   {/* Nutrient Targets */}
                   <AccordionItem value="targets">
@@ -828,13 +892,13 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                 </Accordion>
 
                 <div className="flex gap-2">
-                  <Button type="submit" data-testid="button-save-profile">
-                    Save Changes
+                  <Button type="submit" data-testid="button-save-profile" disabled={loading}>
+                    {loading ? 'Saving...' : 'Save Changes'}
                   </Button>
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setIsEditing(false)}
+                    onClick={() => { setIsEditing(false); form.reset(profileLoaded ?? undefined); }}
                     data-testid="button-cancel-edit"
                   >
                     Cancel
