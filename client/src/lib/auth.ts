@@ -51,7 +51,7 @@ export const signUpWithEmail = async (
 export const createUserProfile = async (user: User, profileData?: Partial<UserProfile>) => {
   if (!user) return;
 
-  const userRef = doc(db, 'Users', user.uid);
+  const userRef = doc(db, 'users', user.uid);
   const userSnap = await getDoc(userRef);
 
   if (!userSnap.exists()) {
