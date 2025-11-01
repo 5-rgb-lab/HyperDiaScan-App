@@ -9,7 +9,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string, profile?: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (profile: UserProfile) => void;
 }
@@ -63,9 +63,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const handleSignUp = async (email: string, password: string, name: string) => {
+  const handleSignUp = async (
+    email: string,
+    password: string,
+    name: string,
+    profile?: Partial<UserProfile>
+  ) => {
     try {
-      await signUpWithEmail(email, password, name);
+      await signUpWithEmail(email, password, name, profile);
     } catch (error) {
       console.error('Sign up failed:', error);
       throw error;
@@ -77,7 +82,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await signOut();
       setUser(null);
       setUserProfile(null);
-    } catch (error) {
+    } catch (error) {   
       console.error('Sign out failed:', error);
       throw error;
     }
@@ -92,7 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     userProfile,
     loading,
     signIn: handleSignIn,
-    signUp: handleSignUp,
+  signUp: handleSignUp,
     signOut: handleSignOut,
     updateProfile,
   };

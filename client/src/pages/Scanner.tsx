@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CameraScanner from '@/components/CameraScanner';
 import NutritionForm from '@/components/NutritionForm';
 import HealthAssessment from '@/components/HealthAssessment';
@@ -6,6 +6,9 @@ import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/sch
 import { analyzeFood } from '@/lib/healthApi';
 import { saveScanRecord } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
+import { userProfileSchema } from '@shared/schema';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import {
   Toast,
   ToastTitle,
@@ -16,7 +19,7 @@ import {
 } from "@/components/ui/toast"
 
 export default function Scanner() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [scannedData, setScannedData] = useState<NutritionData | null>(null);
   const [healthResult, setHealthResult] = useState<HealthPrediction | null>(null);
   const [currentCondition, setCurrentCondition] = useState<'diabetes' | 'hypertension'>('diabetes');
@@ -29,6 +32,30 @@ export default function Scanner() {
     variant?: "default" | "destructive"
   }>({ title: "", description: "", variant: "default" })
 
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  const isProfileComplete = (profile: any) => {
+    if (!profile) return false;
+    try {
+      userProfileSchema.parse(profile);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (user && !isProfileComplete(userProfile)) {
+      setShowProfileModal(true);
+    }
+  }, [user, userProfile]);
+
+  const handleCompleteProfile = () => {
+    setShowProfileModal(false);
+    // navigate to profile page for completion
+    window.location.href = '/profile';
+  };
+
 
   const handleScanComplete = (data: NutritionData) => {
     console.log('Scan completed:', data);
@@ -38,7 +65,8 @@ export default function Scanner() {
 
   const handleAnalyze = async (data: AnalyzeFoodRequest) => {
     console.log('Analyzing data:', data);
-    setCurrentCondition(data.condition);
+    // normalize 'both' to a primary condition for the current UI
+    setCurrentCondition(data.condition === 'both' ? 'diabetes' : data.condition);
     setCurrentFoodName(data.foodName || '');
     setLoading(true); // show loader
 
@@ -88,6 +116,24 @@ export default function Scanner() {
 
   return (
     <ToastProvider swipeDirection="right">
+      <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Your Profile</DialogTitle>
+            <DialogDescription>
+              To provide accurate, personalized health insights, please complete your profile now.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              We'll use this information to customize recommendations and calculate accurate targets.
+            </p>
+            <Button className="w-full" onClick={handleCompleteProfile}>
+              Complete Profile Now
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold" data-testid="text-scanner-title">
@@ -118,13 +164,18 @@ export default function Scanner() {
 
         {healthResult && scannedData && (
           <div className="space-y-6">
-            <HealthAssessment
-              prediction={healthResult.prediction}
-              confidence={healthResult.confidence}
-              reasoning={healthResult.reasoning}
-              condition={currentCondition}
-              nutritionData={scannedData}
-            />
+                {/**
+                 * healthResult currently follows the shared schema: { prediction: 'Safe'|'Risky', reasoning }
+                 * HealthAssessment expects prediction: 'safe'|'moderate'|'risky' and a numeric confidence.
+                 * Map the values conservatively so the UI renders without type errors.
+                 */}
+                <HealthAssessment
+                  prediction={healthResult.prediction === 'Safe' ? 'safe' : 'risky'}
+                  confidence={(healthResult as any).confidence ?? 80}
+                  reasoning={healthResult.reasoning}
+                  condition={currentCondition}
+                  nutritionData={scannedData}
+                />
 
             <div className="flex gap-4">
               <button

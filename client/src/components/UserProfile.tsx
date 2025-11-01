@@ -3,27 +3,34 @@ import { updateUserProfile } from '@/lib/auth';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, Settings, LogOut, Shield, Calculator } from 'lucide-react';
+import { 
+  User, Settings, LogOut, Shield, Calculator, 
+  HeartPulse, Activity, Gauge, Baby, 
+  Cookie, Pill, Target, UserCircle,
+  AlertCircle, Apple, Brain
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
 
-const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  age: z.number().min(18).max(120),
-  primaryCondition: z.enum(['diabetes', 'hypertension']),
-  emergencyContact: z.string().optional(),
-  height: z.number().min(100).max(250).optional(),
-  weight: z.number().min(30).max(300).optional()
-});
+import { 
+  type UserProfile as UserProfileType,
+  userProfileSchema
+} from '@shared/schema';
 
-type ProfileData = z.infer<typeof profileSchema>;
+type ProfileFormData = z.infer<typeof userProfileSchema>;
 
 interface UserProfileProps {
   user?: {
@@ -31,39 +38,65 @@ interface UserProfileProps {
     name: string;
     email: string;
     photoURL?: string;
-    profile?: {
-      name: string;
-      email: string;
-      age?: number; 
-      primaryCondition: "diabetes" | "hypertension"; 
-      emergencyContact?: string;
-      height?: number;
-      weight?: number;
-    } | null; 
+    profile?: UserProfileType | null;
   };
-  onSaveProfile: (data: ProfileData) => void;
+  onSaveProfile: (data: ProfileFormData) => void;
   onSignOut: () => void;
 }
 
 export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
 
-  const form = useForm<ProfileData>({
-    resolver: zodResolver(profileSchema),
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(userProfileSchema),
     defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      age: user?.profile?.age || 30,
-      primaryCondition: (user?.profile?.primaryCondition === 'diabetes' || user?.profile?.primaryCondition === 'hypertension')
-        ? user.profile.primaryCondition
-        : 'diabetes',
-      emergencyContact: user?.profile?.emergencyContact || '',
-      height: user?.profile?.height || undefined,
-      weight: user?.profile?.weight || undefined
+      name: user?.profile?.name || user?.name || '',
+      email: user?.profile?.email || user?.email || '',
+      age: user?.profile?.age || 18,
+      primaryCondition: user?.profile?.primaryCondition || 'diabetes',
+      primaryMedical: user?.profile?.primaryMedical || {
+        diabetesType: 'None',
+        hypertensionType: 'None',
+      },
+      diabetesStatus: user?.profile?.diabetesStatus || {
+        latestHbA1c: 0,
+        hypoglycemiaFrequency: 'Rare',
+      },
+      hypertensionStatus: user?.profile?.hypertensionStatus || {
+        currentBP: { systolic: 120, diastolic: 80 },
+        useOfDiuretic: false,
+      },
+      treatmentManagement: user?.profile?.treatmentManagement || {
+        diabetesManagement: {
+          insulinUse: false,
+          oralMedications: [],
+        },
+        hypertensionManagement: {
+          antihypertensiveMeds: [],
+        },
+      },
+      nutrientTargets: user?.profile?.nutrientTargets || {
+        dailyCalorieTarget: 2000,
+        dailyCarbLimit: 200,
+        dailySodiumLimit: 2300,
+        dailySatFatLimit: 20,
+        fastingGlucoseTarget: '80-100',
+        postMealGlucoseTarget: '100-140',
+      },
+      demographics: user?.profile?.demographics || {
+        biologicalSex: 'Other',
+        heightCm: 170,
+        weightKg: 70,
+        activityLevel: 'Sedentary',
+      },
+      healthBackground: user?.profile?.healthBackground || {
+        otherHealthConditions: [],
+        foodAllergies: [],
+      },
     }
   });
 
-  const onSubmit = async (data: ProfileData) => {
+  const onSubmit = async (data: ProfileFormData) => {
     console.log('Saving profile:', data);
     if (user?.id) {
       try {
@@ -174,172 +207,625 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                         </Badge>
                       </div>
                     </div>
-                    {user.profile.emergencyContact && (
                       <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-muted-foreground">Emergency Contact</label>
-                        <p className="text-sm" data-testid="text-emergency-contact">
-                          {user.profile.emergencyContact}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* BMI Calculator Display */}
-                  {user.profile.height && user.profile.weight && (
-                    <>
-                      <Separator />
-                      <Card className="bg-gradient-to-r from-blue-50 to-teal-50 border-blue-200">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Calculator className="w-6 h-6 text-blue-600" />
-                            <div>
-                              <h4 className="font-semibold text-blue-900">BMI Calculator</h4>
-                              <div className="mt-2 space-y-1">
-                                <p className="text-sm text-blue-800">
-                                  Height: {user.profile.height} cm | Weight: {user.profile.weight} kg
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg font-bold text-blue-900">
-                                    BMI: {calculateBMI(user.profile.weight, user.profile.height)}
-                                  </span>
-                                  <span className={`text-sm font-medium ${getBMICategory(parseFloat(calculateBMI(user.profile.weight, user.profile.height))).color}`}>
-                                    ({getBMICategory(parseFloat(calculateBMI(user.profile.weight, user.profile.height))).category})
-                                  </span>
+                      <Accordion type="single" collapsible className="w-full">
+                        {/* Primary Medical */}
+                        <AccordionItem value="primary-medical">
+                          <AccordionTrigger className="text-left">
+                            <div className="flex items-center gap-2">
+                              <HeartPulse className="h-4 w-4 text-primary" />
+                              <span>Primary Medical Conditions</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="p-4 space-y-2">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Diabetes Type</h4>
+                                  <p className="text-sm">{user.profile?.primaryMedical.diabetesType}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Hypertension Type</h4>
+                                  <p className="text-sm">{user.profile?.primaryMedical.hypertensionType}</p>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </>
-                  )}
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Demographics */}
+                        <AccordionItem value="demographics">
+                          <AccordionTrigger className="text-left">
+                            <div className="flex items-center gap-2">
+                              <UserCircle className="h-4 w-4 text-primary" />
+                              <span>Demographics & Measurements</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="p-4 space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Biological Sex</h4>
+                                  <p className="text-sm">{user.profile?.demographics.biologicalSex}</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Activity Level</h4>
+                                  <p className="text-sm">{user.profile?.demographics.activityLevel}</p>
+                                </div>
+                              </div>
+
+                              {/* BMI Calculator */}
+                              <Card className="bg-gradient-to-r from-blue-50 to-teal-50 border-blue-200">
+                                <CardContent className="p-4">
+                                  <div className="flex items-center gap-3">
+                                    <Calculator className="w-6 h-6 text-blue-600" />
+                                    <div>
+                                      <h4 className="font-semibold text-blue-900">BMI Calculator</h4>
+                                      <div className="mt-2 space-y-1">
+                                        <p className="text-sm text-blue-800">
+                                          Height: {user.profile?.demographics.heightCm} cm | Weight: {user.profile?.demographics.weightKg} kg
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-lg font-bold text-blue-900">
+                                            BMI: {calculateBMI(user.profile?.demographics.weightKg || 0, user.profile?.demographics.heightCm || 0)}
+                                          </span>
+                                          <span className={`text-sm font-medium ${getBMICategory(parseFloat(calculateBMI(user.profile?.demographics.weightKg || 0, user.profile?.demographics.heightCm || 0))).color}`}>
+                                            ({getBMICategory(parseFloat(calculateBMI(user.profile?.demographics.weightKg || 0, user.profile?.demographics.heightCm || 0))).category})
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Treatment Management */}
+                        <AccordionItem value="treatment">
+                          <AccordionTrigger className="text-left">
+                            <div className="flex items-center gap-2">
+                              <Pill className="h-4 w-4 text-primary" />
+                              <span>Treatment & Medications</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="p-4 space-y-4">
+                              {/* Diabetes Management */}
+                              <div>
+                                <h4 className="text-sm font-medium mb-2">Diabetes Management</h4>
+                                <div className="space-y-2">
+                                  <p className="text-sm">
+                                    Insulin: {user.profile?.treatmentManagement.diabetesManagement.insulinUse ? 'Yes' : 'No'}
+                                  </p>
+                                  <p className="text-sm">
+                                    Medications: {user.profile?.treatmentManagement.diabetesManagement.oralMedications.join(', ') || 'None'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Hypertension Management */}
+                              <div>
+                                <h4 className="text-sm font-medium mb-2">Hypertension Management</h4>
+                                <p className="text-sm">
+                                  Medications: {user.profile?.treatmentManagement.hypertensionManagement.antihypertensiveMeds.join(', ') || 'None'}
+                                </p>
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Health Background */}
+                        <AccordionItem value="background">
+                          <AccordionTrigger className="text-left">
+                            <div className="flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4 text-primary" />
+                              <span>Health Background</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="p-4 space-y-4">
+                              <div>
+                                <h4 className="text-sm font-medium mb-2">Other Health Conditions</h4>
+                                <p className="text-sm">
+                                  {user.profile?.healthBackground.otherHealthConditions.length 
+                                    ? user.profile.healthBackground.otherHealthConditions.join(', ')
+                                    : 'None reported'}
+                                </p>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium mb-2">Food Allergies</h4>
+                                <p className="text-sm">
+                                  {user.profile?.healthBackground.foodAllergies.length 
+                                    ? user.profile.healthBackground.foodAllergies.join(', ')
+                                    : 'None reported'}
+                                </p>
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Nutrient Targets */}
+                        <AccordionItem value="targets">
+                          <AccordionTrigger className="text-left">
+                            <div className="flex items-center gap-2">
+                              <Target className="h-4 w-4 text-primary" />
+                              <span>Nutrient & Health Targets</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="p-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Daily Calories</h4>
+                                  <p className="text-sm">{user.profile?.nutrientTargets.dailyCalorieTarget} kcal</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Carb Limit</h4>
+                                  <p className="text-sm">{user.profile?.nutrientTargets.dailyCarbLimit}g</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Sodium Limit</h4>
+                                  <p className="text-sm">{user.profile?.nutrientTargets.dailySodiumLimit}mg</p>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-medium mb-1">Saturated Fat Limit</h4>
+                                  <p className="text-sm">{user.profile?.nutrientTargets.dailySatFatLimit}g</p>
+                                </div>
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
           ) : (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} data-testid="input-profile-name" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <Accordion type="single" collapsible defaultValue="basic" className="w-full">
+                  {/* Basic Information */}
+                  <AccordionItem value="basic">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <span>Basic Information</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" data-testid="input-profile-email" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                  <FormField
-                    control={form.control}
-                    name="age"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Age</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            data-testid="input-profile-age"
+                        <FormField
+                          control={form.control}
+                          name="age"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Age</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="primaryCondition"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Primary Condition</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="diabetes">Diabetes</SelectItem>
+                                  <SelectItem value="hypertension">Hypertension</SelectItem>
+                                  <SelectItem value="both">Both</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Demographics */}
+                  <AccordionItem value="demographics">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <UserCircle className="h-4 w-4" />
+                        <span>Demographics & Measurements</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="demographics.biologicalSex"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Biological Sex</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Male">Male</SelectItem>
+                                  <SelectItem value="Female">Female</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="demographics.heightCm"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Height (cm)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="demographics.weightKg"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Weight (kg)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="demographics.activityLevel"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Activity Level</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Sedentary">Sedentary</SelectItem>
+                                  <SelectItem value="Lightly Active">Lightly Active</SelectItem>
+                                  <SelectItem value="Moderate">Moderate</SelectItem>
+                                  <SelectItem value="Very Active">Very Active</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Medical Conditions */}
+                  <AccordionItem value="medical">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <HeartPulse className="h-4 w-4" />
+                        <span>Medical Conditions</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="p-4 grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="primaryMedical.diabetesType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Diabetes Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="None">None</SelectItem>
+                                  <SelectItem value="Type 1">Type 1</SelectItem>
+                                  <SelectItem value="Type 2">Type 2</SelectItem>
+                                  <SelectItem value="Gestational">Gestational</SelectItem>
+                                  <SelectItem value="Pre-diabetes">Pre-diabetes</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="primaryMedical.hypertensionType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hypertension Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="None">None</SelectItem>
+                                  <SelectItem value="Primary">Primary</SelectItem>
+                                  <SelectItem value="Secondary">Secondary</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="diabetesStatus.latestHbA1c"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Latest HbA1c</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.1"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="hypertensionStatus.currentBP.systolic"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Current Systolic BP</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="hypertensionStatus.currentBP.diastolic"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Current Diastolic BP</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Treatment */}
+                  <AccordionItem value="treatment">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <Pill className="h-4 w-4" />
+                        <span>Treatment & Medications</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="p-4 space-y-6">
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-medium">Diabetes Management</h4>
+                          <FormField
+                            control={form.control}
+                            name="treatmentManagement.diabetesManagement.insulinUse"
+                            render={({ field }) => (
+                              <FormItem className="flex items-center justify-between">
+                                <FormLabel>Insulin Use</FormLabel>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
                           />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                        </div>
 
-                  <FormField
-                    control={form.control}
-                    name="primaryCondition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Condition</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-primary-condition">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="diabetes">Diabetes</SelectItem>
-                            <SelectItem value="hypertension">Hypertension</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+                        <Separator />
 
-                  <FormField
-                    control={form.control}
-                    name="height"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Height (cm)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            placeholder="175"
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                            data-testid="input-height"
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-medium">Hypertension Management</h4>
+                          <FormField
+                            control={form.control}
+                            name="treatmentManagement.hypertensionManagement.medicationTiming"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Medication Timing</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="Morning">Morning</SelectItem>
+                                    <SelectItem value="Evening">Evening</SelectItem>
+                                    <SelectItem value="Both">Both</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                  <FormField
-                    control={form.control}
-                    name="weight"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Weight (kg)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            placeholder="70"
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                            data-testid="input-weight"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  {/* Nutrient Targets */}
+                  <AccordionItem value="targets">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        <span>Daily Targets</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="nutrientTargets.dailyCalorieTarget"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Daily Calorie Target</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                  <FormField
-                    control={form.control}
-                    name="emergencyContact"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Emergency Contact (Optional)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder="Phone number or email"
-                            data-testid="input-emergency-contact"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                        <FormField
+                          control={form.control}
+                          name="nutrientTargets.dailyCarbLimit"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Daily Carb Limit (g)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="nutrientTargets.dailySodiumLimit"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Daily Sodium Limit (mg)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="nutrientTargets.dailySatFatLimit"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Daily Saturated Fat Limit (g)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
 
                 <div className="flex gap-2">
                   <Button type="submit" data-testid="button-save-profile">

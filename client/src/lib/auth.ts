@@ -10,6 +10,9 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { FirebaseUser, UserProfile } from '@shared/schema';
 
+// ----------------------------
+// Sign in / Sign up
+// ----------------------------
 export const signInWithEmail = async (email: string, password: string) => {
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
@@ -20,19 +23,21 @@ export const signInWithEmail = async (email: string, password: string) => {
   }
 };
 
-export const signUpWithEmail = async (email: string, password: string, name: string) => {
+export const signUpWithEmail = async (
+  email: string,
+  password: string,
+  name: string,
+  profileData?: Partial<UserProfile>
+) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const user = result.user;
-    
-    // Update the user's display name
-    await updateProfile(user, {
-      displayName: name
-    });
-    
-    // Create user profile in Firestore
-    await createUserProfile(user);
-    
+
+    await updateProfile(user, { displayName: name });
+
+    // ✅ Create only minimal profile
+    await createUserProfile(user, profileData);
+
     return user;
   } catch (error) {
     console.error('Error signing up with email:', error);
@@ -40,33 +45,38 @@ export const signUpWithEmail = async (email: string, password: string, name: str
   }
 };
 
-export const signOut = async () => {
-  try {
-    await firebaseSignOut(auth);
-  } catch (error) {
-    console.error('Error signing out:', error);
-    throw error;
-  }
-};
-
-export const createUserProfile = async (user: User) => {
+// ----------------------------
+// Create / Update / Fetch User Profile
+// ----------------------------
+export const createUserProfile = async (user: User, profileData?: Partial<UserProfile>) => {
   if (!user) return;
 
-  const userRef = doc(db, 'users', user.uid);
+  const userRef = doc(db, 'Users', user.uid);
   const userSnap = await getDoc(userRef);
-  
+
   if (!userSnap.exists()) {
-    const defaultProfile: UserProfile = {
-      name: user.displayName || 'Unknown User',
-      email: user.email || '',
-      primaryCondition: 'diabetes',
+    // Accept either flat profileData (heightCm, weightKg, gender) or nested demographics.profileData
+    const demographics = profileData?.demographics || {
+      biologicalSex: (profileData as any)?.gender || (profileData as any)?.biologicalSex || 'Other',
+      heightCm: (profileData as any)?.heightCm ?? null,
+      weightKg: (profileData as any)?.weightKg ?? null,
+      activityLevel: (profileData as any)?.activityLevel ?? null,
+      bodyFatPercent: (profileData as any)?.bodyFatPercent ?? null,
+      weightGoal: (profileData as any)?.weightGoal ?? null,
     };
-    
-    await setDoc(userRef, {
-      ...defaultProfile,
+
+    const baseProfile = {
+      uid: user.uid,
+      name: user.displayName || profileData?.name || '',
+      email: user.email || '',
+      age: profileData?.age ?? null,
+      primaryCondition: profileData?.primaryCondition ?? null,
+      demographics, 
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    await setDoc(userRef, baseProfile);
   }
 };
 
@@ -77,7 +87,7 @@ export const updateUserProfile = async (userId: string, profile: Partial<UserPro
     updatedAt: new Date().toISOString(),
   }, { merge: true });
 };
-
+ 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   const userRef = doc(db, 'users', userId);
   const userSnap = await getDoc(userRef);
@@ -90,4 +100,13 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 
 export const onAuthChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
+};
+
+export const signOut = async () => {
+  try {
+    await firebaseSignOut(auth);
+  } catch (error) {
+    console.error('Error signing out:', error);
+    throw error;
+  }
 };
