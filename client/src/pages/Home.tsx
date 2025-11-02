@@ -140,7 +140,7 @@ export default function Home() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="text-center space-y-4 py-6">
+      {/* <div className="text-center space-y-4 py-6">
         <div className="space-y-2">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
             Welcome Back!
@@ -149,6 +149,15 @@ export default function Home() {
             Track your health journey with smart food analysis
           </p>
         </div>
+      </div> */}
+
+      <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
+          Welcome Back
+        </h1>
+        <p className="text-muted-foreground">
+          Track your health journey with smart food analysis
+        </p>
       </div>
 
       {/* Daily Summary */}
@@ -177,13 +186,6 @@ export default function Home() {
               <div className="text-2xl font-bold text-purple-600">{dailyStats.totalScans}</div>
               <div className="text-sm text-muted-foreground">Total Scans</div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progress to Daily Goal</span>
-              <span>{Math.round(dailyProgress)}%</span>
-            </div>
-            <Progress value={dailyProgress} className="h-2" />
           </div>
         </CardContent>
       </Card>

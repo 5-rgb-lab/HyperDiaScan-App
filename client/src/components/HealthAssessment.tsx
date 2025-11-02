@@ -9,6 +9,7 @@ import { useState } from 'react';
 interface HealthAssessmentProps {
   prediction: 'safe' | 'risky';
   condition: 'diabetes' | 'hypertension';
+  reasoning: string;
   nutritionData: {
     calories: number;
     carbohydrates: number;
@@ -23,6 +24,7 @@ interface HealthAssessmentProps {
 export default function HealthAssessment({ 
   prediction, 
   condition,
+  reasoning,
   nutritionData 
 }: HealthAssessmentProps) {
   const [isExpanded, setIsExpanded] = useState(false);

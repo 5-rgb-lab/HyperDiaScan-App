@@ -26,7 +26,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 
 import { 
-  type UserProfile as UserProfileType,
+  type UserProfile,
   userProfileSchema
 } from '@shared/schema';
 
@@ -38,7 +38,7 @@ interface UserProfileProps {
     name: string;
     email: string;
     photoURL?: string;
-    profile?: UserProfileType | null;
+    profile?: UserProfile | null;
   };
   onSaveProfile: (data: ProfileFormData) => void;
   onSignOut: () => void;
@@ -47,46 +47,61 @@ interface UserProfileProps {
 export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [profileLoaded, setProfileLoaded] = useState<UserProfileType | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState<UserProfile | null>(null);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(userProfileSchema),
     defaultValues: {
+      // Basic Info
       name: user?.profile?.name || user?.name || '',
       email: user?.profile?.email || user?.email || '',
       age: user?.profile?.age || 18,
       primaryCondition: user?.profile?.primaryCondition || 'diabetes',
+      
+      // Primary Medical
       primaryMedical: user?.profile?.primaryMedical || {
         diabetesType: 'None',
         hypertensionType: 'None',
       },
+      
+      // Diabetes Status
       diabetesStatus: user?.profile?.diabetesStatus || {
         latestHbA1c: 0,
         hypoglycemiaFrequency: 'Rare',
       },
+      
+      // Hypertension Status
       hypertensionStatus: user?.profile?.hypertensionStatus || {
-        currentBP: { systolic: 120, diastolic: 80 },
-        useOfDiuretic: false,
+        currentBP: { 
+          systolic: 120, 
+          diastolic: 80 
+        },
       },
+      
+      // Treatment Management
       treatmentManagement: user?.profile?.treatmentManagement || {
         diabetesManagement: {
           insulinUse: false,
-          oralMedications: [],
+          insulinType: "Short-acting", // Required by schema
+          insulinTiming: "Before Meals",  // Required by schema
         },
         hypertensionManagement: {
           antihypertensiveMeds: [],
+          medicationTiming: "Morning", // Required by schema
         },
       },
+      
+      // Nutrient Targets
       nutrientTargets: user?.profile?.nutrientTargets || {
         dailyCalorieTarget: 2000,
         dailyCarbLimit: 200,
         dailySodiumLimit: 2300,
         dailySatFatLimit: 20,
-        fastingGlucoseTarget: '80-100',
-        postMealGlucoseTarget: '100-140',
       },
+      
+      // Demographics
       demographics: user?.profile?.demographics || {
-        biologicalSex: 'Other',
+        biologicalSex: 'Male',
         heightCm: 170,
         weightKg: 70,
         activityLevel: 'Sedentary',
@@ -108,30 +123,58 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
         if (mounted && data) {
           // merge data with defaults to avoid missing fields
           form.reset({
+            // Basic Info
             name: data.name ?? user.name ?? '',
             email: data.email ?? user.email ?? '',
             age: data.age ?? 18,
             primaryCondition: data.primaryCondition ?? 'diabetes',
-            primaryMedical: data.primaryMedical ?? { diabetesType: 'None', hypertensionType: 'None' },
-            diabetesStatus: data.diabetesStatus ?? { latestHbA1c: 0, hypoglycemiaFrequency: 'Rare' },
-            hypertensionStatus: data.hypertensionStatus ?? { currentBP: { systolic: 120, diastolic: 80 }, useOfDiuretic: false },
-            treatmentManagement: data.treatmentManagement ?? {
-              diabetesManagement: { insulinUse: false, oralMedications: [] },
-              hypertensionManagement: { antihypertensiveMeds: [] },
+            
+            // Primary Medical
+            primaryMedical: data.primaryMedical ?? { 
+              diabetesType: 'None', 
+              hypertensionType: 'None' 
             },
+            
+            // Diabetes Status
+            diabetesStatus: data.diabetesStatus ?? { 
+              latestHbA1c: 0, 
+            },
+            
+            // Hypertension Status
+            hypertensionStatus: data.hypertensionStatus ?? { 
+              currentBP: { 
+                systolic: 120, 
+                diastolic: 80 
+              }
+            },
+            
+            // Treatment Management
+            treatmentManagement: data.treatmentManagement ?? {
+              diabetesManagement: {
+                insulinUse: false,
+                insulinType: 'Short-acting',
+                insulinTiming: 'Before Meals',
+              },
+              hypertensionManagement: {
+                antihypertensiveMeds: [],
+                medicationTiming: 'Morning'
+              }
+            },
+            
+            // Nutrient Targets
             nutrientTargets: data.nutrientTargets ?? {
               dailyCalorieTarget: 2000,
               dailyCarbLimit: 200,
               dailySodiumLimit: 2300,
-              dailySatFatLimit: 20,
-              fastingGlucoseTarget: '80-100',
-              postMealGlucoseTarget: '100-140',
+              dailySatFatLimit: 20
             },
+            
+            // Demographics
             demographics: data.demographics ?? {
-              biologicalSex: 'Other',
+              biologicalSex: 'Male',
               heightCm: 170,
               weightKg: 70,
-              activityLevel: 'Sedentary',
+              activityLevel: 'Sedentary'
             },
           });
           setProfileLoaded(data);
@@ -148,25 +191,55 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
 
   const onSubmit = async (data: ProfileFormData) => {
     console.log('Saving profile:', data);
-    if (user?.id) {
-      try {
-        setLoading(true);
-        await updateUserProfile(user.id, data);
-        // keep local copy
-        setProfileLoaded(data as UserProfileType);
-        // call parent callback
-        onSaveProfile(data);
+    if (!user?.id) {
+      console.error('No user ID available');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Ensure all required fields are present
+      const profileData: UserProfile = {
+        ...data,
+        // Ensure these required fields are always present
+        primaryMedical: {
+          ...data.primaryMedical,
+        },
+        diabetesStatus: {
+          ...data.diabetesStatus,
+        },
+        hypertensionStatus: {
+          ...data.hypertensionStatus,
+        },
+        treatmentManagement: {
+          ...data.treatmentManagement,
+        },
+        nutrientTargets: {
+          ...data.nutrientTargets,
+        },
+        demographics: {
+          ...data.demographics,
+        },
+      };
+
+      // Update profile and get the updated data
+      const updatedProfile = await updateUserProfile(user.id, profileData);
+      
+      if (updatedProfile) {
+        // Update local state with the server response
+        setProfileLoaded(updatedProfile);
+        // Notify parent
+        onSaveProfile(updatedProfile);
         setIsEditing(false);
-        console.log('Profile saved to Firestore');
-      } catch (error) {
-        console.error('Error saving to Firestore:', error);
-      } finally {
-        setLoading(false);
+        console.log('Profile saved successfully');
+      } else {
+        console.error('Failed to get updated profile');
       }
-    } else {
-      // fallback: still call onSaveProfile (so UI can react)
-      onSaveProfile(data);
-      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving to Firestore:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -245,6 +318,7 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
         <CardContent>
           {!isEditing ? (
             <div className="space-y-4">
+              {/* Basic Info */}
               <div className="flex items-center gap-4">
                 <Avatar className="w-16 h-16">
                   <AvatarImage src={user.photoURL} alt={user.name} />
@@ -253,177 +327,131 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-user-name">
-                    {user.name}
-                  </h3>
-                  <p className="text-muted-foreground" data-testid="text-user-email">
-                    {user.email}
-                  </p>
+                  <h3 className="text-lg font-semibold">{user.name}</h3>
+                  <p className="text-muted-foreground">{user.email}</p>
                 </div>
               </div>
 
               {profileLoaded && (
                 <>
                   <Separator />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Age</label>
-                      <p className="text-sm" data-testid="text-user-age">
-                        {profileLoaded.age} years old
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Primary Condition</label>
-                      <div className="mt-1">
-                        <Badge className={getConditionBadge(profileLoaded.primaryCondition)}>
-                          {getConditionText(profileLoaded.primaryCondition)}
-                        </Badge>
-                      </div>
-                    </div>
-                      <div className="md:col-span-2">
-                      <Accordion type="single" collapsible className="w-full">
-                        {/* Primary Medical */}
-                        <AccordionItem value="primary-medical">
-                          <AccordionTrigger className="text-left">
-                            <div className="flex items-center gap-2">
-                              <HeartPulse className="h-4 w-4 text-primary" />
-                              <span>Primary Medical Conditions</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="p-4 space-y-2">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Diabetes Type</h4>
-                                  <p className="text-sm">{profileLoaded?.primaryMedical?.diabetesType}</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Hypertension Type</h4>
-                                  <p className="text-sm">{profileLoaded?.primaryMedical?.hypertensionType}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
+                  <Accordion type="multiple" className="w-full">
+                    {/* BASIC INFO */}
+                    <AccordionItem value="basic">
+                      <AccordionTrigger>Basic Information</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><strong>Age:</strong> {profileLoaded.age} years</div>
+                          <div>
+                            <strong>Primary Condition:</strong>{" "}
+                            <Badge className={getConditionBadge(profileLoaded.primaryCondition)}>
+                              {getConditionText(profileLoaded.primaryCondition)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                        {/* Demographics */}
-                        <AccordionItem value="demographics">
-                          <AccordionTrigger className="text-left">
-                            <div className="flex items-center gap-2">
-                              <UserCircle className="h-4 w-4 text-primary" />
-                              <span>Demographics & Measurements</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="p-4 space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Biological Sex</h4>
-                                  <p className="text-sm">{profileLoaded?.demographics?.biologicalSex}</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Activity Level</h4>
-                                  <p className="text-sm">{profileLoaded?.demographics?.activityLevel}</p>
-                                </div>
-                              </div>
+                    {/* DEMOGRAPHICS */}
+                    <AccordionItem value="demographics">
+                      <AccordionTrigger>Demographics & Measurements</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><strong>Sex:</strong> {profileLoaded.demographics.biologicalSex}</div>
+                          <div><strong>Activity Level:</strong> {profileLoaded.demographics.activityLevel}</div>
+                          <div><strong>Height:</strong> {profileLoaded.demographics.heightCm} cm</div>
+                          <div><strong>Weight:</strong> {profileLoaded.demographics.weightKg} kg</div>
+                        </div>
+                        <div className="mt-2">
+                          <strong>BMI:</strong>{" "}
+                          {calculateBMI(profileLoaded.demographics.weightKg, profileLoaded.demographics.heightCm)}{" "}
+                          <span className={getBMICategory(parseFloat(calculateBMI(profileLoaded.demographics.weightKg, profileLoaded.demographics.heightCm))).color}>
+                            ({getBMICategory(parseFloat(calculateBMI(profileLoaded.demographics.weightKg, profileLoaded.demographics.heightCm))).category})
+                          </span>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                              {/* BMI Calculator */}
-                              <Card className="bg-gradient-to-r from-blue-50 to-teal-50 border-blue-200">
-                                <CardContent className="p-4">
-                                  <div className="flex items-center gap-3">
-                                    <Calculator className="w-6 h-6 text-blue-600" />
-                                    <div>
-                                      <h4 className="font-semibold text-blue-900">BMI Calculator</h4>
-                                      <div className="mt-2 space-y-1">
-                                        <p className="text-sm text-blue-800">
-                                          Height: {profileLoaded?.demographics?.heightCm} cm | Weight: {profileLoaded?.demographics?.weightKg} kg
-                                        </p>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-lg font-bold text-blue-900">
-                                            BMI: {calculateBMI(profileLoaded?.demographics?.weightKg || 0, profileLoaded?.demographics?.heightCm || 0)}
-                                          </span>
-                                          <span className={`text-sm font-medium ${getBMICategory(parseFloat(calculateBMI(profileLoaded?.demographics?.weightKg || 0, profileLoaded?.demographics?.heightCm || 0))).color}`}>
-                                            ({getBMICategory(parseFloat(calculateBMI(profileLoaded?.demographics?.weightKg || 0, profileLoaded?.demographics?.heightCm || 0))).category})
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
+                    {/* MEDICAL CONDITIONS */}
+                    <AccordionItem value="medical">
+                      <AccordionTrigger>Medical Conditions</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          {(profileLoaded.primaryCondition === "diabetes" ||
+                            profileLoaded.primaryCondition === "both") && (
+                            <>
+                              <div><strong>Diabetes Type:</strong> {profileLoaded.primaryMedical.diabetesType}</div>
+                              <div><strong>Latest HbA1c:</strong> {profileLoaded.diabetesStatus.latestHbA1c || "N/A"}</div>
+                            </>
+                          )}
 
-                        {/* Treatment Management */}
-                        <AccordionItem value="treatment">
-                          <AccordionTrigger className="text-left">
-                            <div className="flex items-center gap-2">
-                              <Pill className="h-4 w-4 text-primary" />
-                              <span>Treatment & Medications</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="p-4 space-y-4">
-                              {/* Diabetes Management */}
+                          {(profileLoaded.primaryCondition === "hypertension" ||
+                            profileLoaded.primaryCondition === "both") && (
+                            <>
+                              <div><strong>Hypertension Type:</strong> {profileLoaded.primaryMedical.hypertensionType}</div>
                               <div>
-                                <h4 className="text-sm font-medium mb-2">Diabetes Management</h4>
-                                <div className="space-y-2">
-                                  <p className="text-sm">
-                                    Insulin: {profileLoaded?.treatmentManagement?.diabetesManagement?.insulinUse ? 'Yes' : 'No'}
-                                  </p>
-                                  <p className="text-sm">
-                                    Medications: {profileLoaded?.treatmentManagement?.diabetesManagement?.oralMedications?.join(', ') || 'None'}
-                                  </p>
-                                </div>
+                                <strong>Blood Pressure:</strong>{" "}
+                                {profileLoaded.hypertensionStatus.currentBP.systolic}/
+                                {profileLoaded.hypertensionStatus.currentBP.diastolic} mmHg
                               </div>
+                            </>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                              {/* Hypertension Management */}
-                              <div>
-                                <h4 className="text-sm font-medium mb-2">Hypertension Management</h4>
-                                <p className="text-sm">
-                                  Medications: {profileLoaded?.treatmentManagement?.hypertensionManagement?.antihypertensiveMeds?.join(', ') || 'None'}
-                                </p>
-                              </div>
+                    {/* TREATMENT */}
+                    <AccordionItem value="treatment">
+                      <AccordionTrigger>Treatment & Medications</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4">
+                          {(profileLoaded.primaryCondition === "diabetes" ||
+                            profileLoaded.primaryCondition === "both") && (
+                            <div>
+                              <h4 className="font-medium text-sm">Diabetes Management</h4>
+                              <p>Insulin Use: {profileLoaded.treatmentManagement.diabetesManagement.insulinUse ? "Yes" : "No"}</p>
+                              {profileLoaded.treatmentManagement.diabetesManagement.insulinUse && (
+                                <>
+                                  <p>Insulin Type: {profileLoaded.treatmentManagement.diabetesManagement.insulinType || "N/A"}</p>
+                                  <p>Insulin Timing: {profileLoaded.treatmentManagement.diabetesManagement.insulinTiming || "N/A"}</p>
+                                </>
+                              )}
                             </div>
-                          </AccordionContent>
-                        </AccordionItem>
+                          )}
 
+                          {(profileLoaded.primaryCondition === "hypertension" ||
+                            profileLoaded.primaryCondition === "both") && (
+                            <div>
+                              <h4 className="font-medium text-sm">Hypertension Management</h4>
+                              <p>
+                                Antihypertensive Meds:{" "}
+                                {profileLoaded.treatmentManagement.hypertensionManagement.antihypertensiveMeds?.length
+                                  ? profileLoaded.treatmentManagement.hypertensionManagement.antihypertensiveMeds.join(", ")
+                                  : "None"}
+                              </p>
+                              <p>
+                                Timing: {profileLoaded.treatmentManagement.hypertensionManagement.medicationTiming || "N/A"}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
 
-                        {/* Nutrient Targets */}
-                        <AccordionItem value="targets">
-                          <AccordionTrigger className="text-left">
-                            <div className="flex items-center gap-2">
-                              <Target className="h-4 w-4 text-primary" />
-                              <span>Nutrient & Health Targets</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="p-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Daily Calories</h4>
-                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailyCalorieTarget} kcal</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Carb Limit</h4>
-                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailyCarbLimit}g</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Sodium Limit</h4>
-                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailySodiumLimit}mg</p>
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-medium mb-1">Saturated Fat Limit</h4>
-                                  <p className="text-sm">{profileLoaded?.nutrientTargets?.dailySatFatLimit}g</p>
-                                </div>
-                              </div>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    </div>
-                  </div>
+                    {/* TARGETS */}
+                    <AccordionItem value="targets">
+                      <AccordionTrigger>Nutrient & Health Targets</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div><strong>Calories:</strong> {profileLoaded.nutrientTargets.dailyCalorieTarget} kcal</div>
+                          <div><strong>Carbs Limit:</strong> {profileLoaded.nutrientTargets.dailyCarbLimit} g</div>
+                          <div><strong>Sodium Limit:</strong> {profileLoaded.nutrientTargets.dailySodiumLimit} mg</div>
+                          <div><strong>Sat. Fat Limit:</strong> {profileLoaded.nutrientTargets.dailySatFatLimit} g</div>
+
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </>
               )}
             </div>
@@ -754,6 +782,7 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                         {(form.watch('primaryCondition') === 'diabetes' || form.watch('primaryCondition') === 'both') && (
                           <div className="space-y-4">
                             <h4 className="text-sm font-medium">Diabetes Management</h4>
+
                             <FormField
                               control={form.control}
                               name="treatmentManagement.diabetesManagement.insulinUse"
@@ -761,21 +790,88 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                                 <FormItem className="flex items-center justify-between">
                                   <FormLabel>Insulin Use</FormLabel>
                                   <FormControl>
-                                    <Switch
-                                      checked={field.value}
-                                      onCheckedChange={field.onChange}
-                                    />
+                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                                   </FormControl>
                                 </FormItem>
                               )}
                             />
+
+                            {form.watch("treatmentManagement.diabetesManagement.insulinUse") && (
+                              <>
+                                <FormField
+                                  control={form.control}
+                                  name="treatmentManagement.diabetesManagement.insulinType"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Insulin Type</FormLabel>
+                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger><SelectValue /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="Short-acting">Short-acting</SelectItem>
+                                          <SelectItem value="Long-acting">Long-acting</SelectItem>
+                                          <SelectItem value="Both">Both</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormItem>
+                                  )}
+                                />
+                                  <FormField
+                                    control={form.control}
+                                    name="treatmentManagement.diabetesManagement.insulinTiming"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Insulin Timing</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select timing" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="Before Meals">Before Meals</SelectItem>
+                                            <SelectItem value="After Meals">After Meals</SelectItem>
+                                            <SelectItem value="Morning">Morning</SelectItem>
+                                            <SelectItem value="Evening">Evening</SelectItem>
+                                            <SelectItem value="Both">As prescribed</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+                                    )}
+                                  />
+
+                              </>
+                            )}
                           </div>
                         )}
+
 
                         {/* Hypertension Management */}
                         {(form.watch('primaryCondition') === 'hypertension' || form.watch('primaryCondition') === 'both') && (
                           <div className="space-y-4">
                             <h4 className="text-sm font-medium">Hypertension Management</h4>
+
+                            <FormField
+                              control={form.control}
+                              name="treatmentManagement.hypertensionManagement.antihypertensiveMeds"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Antihypertensive Medications (comma separated)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      placeholder="e.g., Losartan, Amlodipine"
+                                      onChange={(e) =>
+                                        field.onChange(e.target.value.split(",").map(v => v.trim()))
+                                      }
+                                      value={field.value?.join(", ")}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
                             <FormField
                               control={form.control}
                               name="treatmentManagement.hypertensionManagement.medicationTiming"
@@ -784,9 +880,7 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                                   <FormLabel>Medication Timing</FormLabel>
                                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
+                                      <SelectTrigger><SelectValue /></SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                       <SelectItem value="Morning">Morning</SelectItem>
@@ -794,12 +888,12 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
                                       <SelectItem value="Both">Both</SelectItem>
                                     </SelectContent>
                                   </Select>
-                                  <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
                         )}
+
                       </div>
                     </AccordionContent>
                   </AccordionItem>

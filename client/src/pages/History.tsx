@@ -136,7 +136,6 @@ export default function History() {
             date,
             condition,
             prediction,
-            confidence,
             foodName,
             reasoning, // <-- included here
             nutritionData: { calories, carbs, sodium },
@@ -264,14 +263,23 @@ export default function History() {
 
       {/* Page content */}
       <div className="space-y-6">
-        <div className="text-center space-y-2">
+        {/* <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold" data-testid="text-history-title">
             Scan History
           </h1>
           <p className="text-muted-foreground">
             Review your past food scans and health assessments
           </p>
-        </div>
+        </div> */}
+
+      <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
+          Scan History
+        </h1>
+        <p className="text-muted-foreground">
+          Review your past food scans and health assessments
+        </p>
+      </div>
 
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">

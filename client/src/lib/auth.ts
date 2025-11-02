@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { FirebaseUser, UserProfile } from '@shared/schema';
+import { FirebaseUser, UserProfile, userProfileSchema } from '@shared/schema';
 
 // ----------------------------
 // Sign in / Sign up
@@ -55,37 +55,132 @@ export const createUserProfile = async (user: User, profileData?: Partial<UserPr
   const userSnap = await getDoc(userRef);
 
   if (!userSnap.exists()) {
-    // Accept either flat profileData (heightCm, weightKg, gender) or nested demographics.profileData
-    const demographics = profileData?.demographics || {
-      biologicalSex: (profileData as any)?.gender || (profileData as any)?.biologicalSex || 'Other',
-      heightCm: (profileData as any)?.heightCm ?? null,
-      weightKg: (profileData as any)?.weightKg ?? null,
-      activityLevel: (profileData as any)?.activityLevel ?? null,
-      bodyFatPercent: (profileData as any)?.bodyFatPercent ?? null,
-      weightGoal: (profileData as any)?.weightGoal ?? null,
-    };
-
-    const baseProfile = {
-      uid: user.uid,
+    const baseProfile: UserProfile = {
       name: user.displayName || profileData?.name || '',
       email: user.email || '',
-      age: profileData?.age ?? null,
-      primaryCondition: profileData?.primaryCondition ?? null,
-      demographics, 
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      age: profileData?.age ?? 18,
+      primaryCondition: profileData?.primaryCondition ?? 'diabetes',
+      primaryMedical: {
+        diabetesType: 'None',
+        hypertensionType: 'None'
+      },
+      diabetesStatus: {
+        latestHbA1c: 0,
+        hypoglycemiaFrequency: 'Rare'
+      },
+      hypertensionStatus: {
+        currentBP: {
+          systolic: 120,
+          diastolic: 80
+        }
+      },
+      treatmentManagement: {
+        diabetesManagement: {
+          insulinUse: false,
+          insulinType: 'Short-acting',
+          insulinTiming: 'Before Meals'
+        },
+        hypertensionManagement: {
+          antihypertensiveMeds: [],
+          medicationTiming: 'Morning'
+        }
+      },
+      nutrientTargets: {
+        dailyCalorieTarget: 2000,
+        dailyCarbLimit: 200,
+        dailySodiumLimit: 2300,
+        dailySatFatLimit: 20
+      },
+      demographics: {
+        biologicalSex: profileData?.demographics?.biologicalSex || 'Male',
+        heightCm: profileData?.demographics?.heightCm || 170,
+        weightKg: profileData?.demographics?.weightKg || 70,
+        activityLevel: profileData?.demographics?.activityLevel || 'Sedentary'
+      }
     };
 
-    await setDoc(userRef, baseProfile);
+    // Save the validated profile
+    await setDoc(userRef, {
+      ...baseProfile,
+      uid: user.uid, // Add UID for reference
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
   }
 };
 
-export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
+export const updateUserProfile = async (userId: string, profile: UserProfile) => {
   const userRef = doc(db, 'users', userId);
-  await setDoc(userRef, {
+  const userSnap = await getDoc(userRef);
+  
+  const defaultProfile: UserProfile = {
+    name: '',
+    email: '',
+    age: 18,
+    primaryCondition: 'diabetes',
+    primaryMedical: {
+      diabetesType: 'None',
+      hypertensionType: 'None'
+    },
+    diabetesStatus: {
+      latestHbA1c: 0,
+      hypoglycemiaFrequency: 'Rare'
+    },
+    hypertensionStatus: {
+      currentBP: {
+        systolic: 120,
+        diastolic: 80
+      }
+    },
+    treatmentManagement: {
+      diabetesManagement: {
+        insulinUse: false,
+        insulinType: 'Short-acting',
+        insulinTiming: 'Before Meals'
+      },
+      hypertensionManagement: {
+        antihypertensiveMeds: [],
+        medicationTiming: 'Morning'
+      }
+    },
+    nutrientTargets: {
+      dailyCalorieTarget: 2000,
+      dailyCarbLimit: 200,
+      dailySodiumLimit: 2300,
+      dailySatFatLimit: 20
+    },
+    demographics: {
+      biologicalSex: 'Male',
+      heightCm: 170,
+      weightKg: 70,
+      activityLevel: 'Sedentary'
+    }
+  };
+
+  // Get existing data or use default profile
+  const existingData = userSnap.exists() ? userSnap.data() as UserProfile : defaultProfile;
+  
+  // Merge the new profile data with existing data
+  const updatedProfile = {
+    ...existingData,
     ...profile,
-    updatedAt: new Date().toISOString(),
-  }, { merge: true });
+    updatedAt: new Date().toISOString()
+  };
+
+  // Validate the profile against the schema
+  try {
+    const validatedProfile = userProfileSchema.parse(updatedProfile);
+    
+    // Save the validated profile
+    await setDoc(userRef, validatedProfile, { merge: true });
+    
+    // Fetch and return the updated profile
+    const updatedSnap = await getDoc(userRef);
+    return updatedSnap.exists() ? updatedSnap.data() as UserProfile : null;
+  } catch (error) {
+    console.error('Profile validation failed:', error);
+    throw error;
+  }
 };
  
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {

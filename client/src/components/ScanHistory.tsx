@@ -56,7 +56,7 @@ export default function ScanHistory({ records, onViewDetails, onDeleteRecord }: 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="w-5 h-5" />
-          Scan History
+          Scan History 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

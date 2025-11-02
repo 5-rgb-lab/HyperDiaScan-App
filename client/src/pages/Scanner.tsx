@@ -135,14 +135,23 @@ export default function Scanner() {
         </DialogContent>
       </Dialog>
       <div className="space-y-6">
-        <div className="text-center space-y-2">
+        {/* <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold" data-testid="text-scanner-title">
             Nutrition Label Scanner
           </h1>
           <p className="text-muted-foreground">
             Upload a photo of your food's nutrition label for instant health analysis
           </p>
-        </div>
+        </div> */}
+
+      <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
+          Food Analysis
+        </h1>
+        <p className="text-muted-foreground">
+          Track your health journey with smart food analysis
+        </p>
+      </div>
 
         {!scannedData && (
           <CameraScanner onScanComplete={handleScanComplete} />
@@ -171,7 +180,6 @@ export default function Scanner() {
                  */}
                 <HealthAssessment
                   prediction={healthResult.prediction === 'Safe' ? 'safe' : 'risky'}
-                  confidence={(healthResult as any).confidence ?? 80}
                   reasoning={healthResult.reasoning}
                   condition={currentCondition}
                   nutritionData={scannedData}
