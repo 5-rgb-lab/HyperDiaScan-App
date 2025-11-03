@@ -3,7 +3,7 @@ import CameraScanner from '@/components/CameraScanner';
 import NutritionForm from '@/components/NutritionForm';
 import HealthAssessment from '@/components/HealthAssessment';
 import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
-import { analyzeFood } from '@/lib/healthApi';
+import { analyzeFood } from '@/lib/analyzeFood';
 import { saveScanRecord } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { userProfileSchema } from '@shared/schema';
@@ -71,7 +71,8 @@ export default function Scanner() {
     setLoading(true); // show loader
 
     try {
-      const result = await analyzeFood(data);
+      // FIX: Pass userProfile as the second argument to analyzeFood
+      const result = await analyzeFood(data, userProfile!);
       console.log('Analysis completed successfully:', result);
       setHealthResult(result);
       

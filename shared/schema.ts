@@ -93,25 +93,25 @@ export const userProfileSchema = z.object({
 // ----------------------------------------------------
 // 🔍 Scan Record Schema
 // ----------------------------------------------------
-export const scanRecordSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  timestamp: z.string().datetime(),
-  foodName: z.string().optional(),
-  nutritionData: nutritionDataSchema,
-  condition: healthConditionSchema,
-  prediction: healthPredictionSchema,
-});
+// export const scanRecordSchema = z.object({
+//   id: z.string(),
+//   userId: z.string(),
+//   timestamp: z.string().datetime(),
+//   foodName: z.string().optional(),
+//   nutritionData: nutritionDataSchema,
+//   condition: healthConditionSchema,
+//   prediction: healthPredictionSchema,
+// });
 
 // ----------------------------------------------------
 // 🔐 Firebase User Schema
 // ----------------------------------------------------
-export const firebaseUserSchema = z.object({
-  uid: z.string(),
-  email: z.string().email().nullable(),
-  displayName: z.string().nullable(),
-  emailVerified: z.boolean(),
-});
+// export const firebaseUserSchema = z.object({
+//   uid: z.string(),
+//   email: z.string().email().nullable(),
+//   displayName: z.string().nullable(),
+//   emailVerified: z.boolean(),
+// });
 
 // ----------------------------------------------------
 // 🧠 Type Exports
@@ -128,14 +128,14 @@ export type NutrientTargets = z.infer<typeof nutrientTargetsSchema>;
 export type Demographics = z.infer<typeof demographicsSchema>;
 
 export type UserProfile = z.infer<typeof userProfileSchema>;
-export type ScanRecord = z.infer<typeof scanRecordSchema>;
-export type FirebaseUser = z.infer<typeof firebaseUserSchema>;
+// export type ScanRecord = z.infer<typeof scanRecordSchema>;
+// export type FirebaseUser = z.infer<typeof firebaseUserSchema>;
 
 // ----------------------------------------------------
 // 🧾 Insert Schemas (for forms or writes)
 // ----------------------------------------------------
 export const insertUserProfileSchema = userProfileSchema.omit({});
-export const insertScanRecordSchema = scanRecordSchema.omit({ id: true, timestamp: true });
+// export const insertScanRecordSchema = scanRecordSchema.omit({ id: true, timestamp: true });
 
 export const analyzeFoodSchema = nutritionDataSchema.extend({
   condition: healthConditionSchema,
@@ -143,5 +143,5 @@ export const analyzeFoodSchema = nutritionDataSchema.extend({
 });
 
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
-export type InsertScanRecord = z.infer<typeof insertScanRecordSchema>;
+// export type InsertScanRecord = z.infer<typeof insertScanRecordSchema>;
 export type AnalyzeFoodRequest = z.infer<typeof analyzeFoodSchema>;
