@@ -35,7 +35,7 @@ export default function Profile() {
     email: user.email || '',
     photoURL: user.photoURL || undefined,
     profile: userProfile
-  } : undefined;
+  } : null;
 
   return (
     <div className="space-y-6">
@@ -73,12 +73,16 @@ export default function Profile() {
         </p>
       </div>
 
-      <div id="profile-form">
-        <UserProfile 
-          user={profileUser}
-          onSaveProfile={handleSaveProfile}
-          onSignOut={signOut}
-        />
+      <div id="profile-form" className="max-w-4xl mx-auto p-4 bg-white/80 rounded-lg shadow">
+        {user ? (
+          <UserProfile 
+            user={profileUser!}
+            onSaveProfile={handleSaveProfile}
+            onSignOut={signOut}
+          />
+        ) : (
+          <div className="p-6 text-center text-muted-foreground">Please sign in to view and edit your profile.</div>
+        )}
       </div>
     </div>
   );

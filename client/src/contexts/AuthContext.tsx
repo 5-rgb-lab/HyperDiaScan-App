@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { onAuthChange, signInWithEmail, signUpWithEmail, signOut } from '@/lib/auth';
-import { getUserProfile } from '@/lib/auth';
+import { onAuthChange, signInWithEmail, signUpWithEmail, signOut, getUserProfile, updateUserProfile } from '@/lib/auth';
 import { UserProfile } from '@shared/schema';
 
 interface AuthContextType {
@@ -11,7 +10,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, profile?: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
-  updateProfile: (profile: UserProfile) => void;
+  updateProfile: (profile: UserProfile) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -88,8 +87,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const updateProfile = (profile: UserProfile) => {
-    setUserProfile(profile);
+  // Persist profile to Firestore and update local context
+  const updateProfile = async (profile: UserProfile) => {
+    if (!user) throw new Error('No authenticated user');
+    try {
+      const updated = await updateUserProfile(user.uid, profile);
+      if (updated) setUserProfile(updated);
+    } catch (error) {
+      console.error('Failed to update profile in AuthContext:', error);
+      throw error;
+    }
   };
 
   const value = {
