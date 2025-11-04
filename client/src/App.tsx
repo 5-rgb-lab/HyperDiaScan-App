@@ -15,7 +15,7 @@ import History from "@/pages/History";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
-// comment to try ci
+
 function Router() {
   return (
     <Switch>

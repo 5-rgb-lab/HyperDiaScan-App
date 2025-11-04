@@ -4,7 +4,8 @@ import {
   signOut as firebaseSignOut, 
   onAuthStateChanged,
   User,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
@@ -38,6 +39,8 @@ export const signUpWithEmail = async (
     // ✅ Create only minimal profile
     await createUserProfile(user, profileData);
 
+    await firebaseSignOut(auth);
+
     return user;
   } catch (error) {
     console.error('Error signing up with email:', error);
@@ -55,54 +58,26 @@ export const createUserProfile = async (user: User, profileData?: Partial<UserPr
   const userSnap = await getDoc(userRef);
 
   if (!userSnap.exists()) {
-    const baseProfile: UserProfile = {
+    // Only save the fields that are collected during registration
+    // Create minimal profile with only registration data and required fields
+    const baseProfile: Partial<UserProfile> = {
       name: user.displayName || profileData?.name || '',
       email: user.email || '',
-      age: profileData?.age ?? 18,
-      primaryCondition: profileData?.primaryCondition ?? 'diabetes',
-      primaryMedical: {
-        diabetesType: 'None',
-        hypertensionType: 'None'
-      },
-      diabetesStatus: {
-        latestHbA1c: 0,
-        hypoglycemiaFrequency: 'Rare'
-      },
-      hypertensionStatus: {
-        currentBP: {
-          systolic: 120,
-          diastolic: 80
-        }
-      },
-      treatmentManagement: {
-        diabetesManagement: {
-          insulinUse: false,
-          insulinType: 'Short-acting',
-          insulinTiming: 'Before Meals'
-        },
-        hypertensionManagement: {
-          antihypertensiveMeds: [],
-          medicationTiming: 'Morning'
-        }
-      },
-      nutrientTargets: {
-        dailyCalorieTarget: 2000,
-        dailyCarbLimit: 200,
-        dailySodiumLimit: 2300,
-        dailySatFatLimit: 20
-      },
+      age: profileData?.age || 18,
+      primaryCondition: profileData?.primaryCondition || 'diabetes',
       demographics: {
         biologicalSex: profileData?.demographics?.biologicalSex || 'Male',
         heightCm: profileData?.demographics?.heightCm || 170,
         weightKg: profileData?.demographics?.weightKg || 70,
-        activityLevel: profileData?.demographics?.activityLevel || 'Sedentary'
+        activityLevel: 'Sedentary'
       }
     };
 
-    // Save the validated profile
+    // Save the minimal profile and mark it as incomplete
     await setDoc(userRef, {
       ...baseProfile,
-      uid: user.uid, // Add UID for reference
+      uid: user.uid,
+      isProfileComplete: false, // Add flag to track profile completion status
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -195,6 +170,15 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 
 export const onAuthChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw error;
+  }
 };
 
 export const signOut = async () => {

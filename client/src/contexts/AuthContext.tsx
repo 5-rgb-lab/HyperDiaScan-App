@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { onAuthChange, signInWithEmail, signUpWithEmail, signOut, getUserProfile, updateUserProfile } from '@/lib/auth';
+import { onAuthChange, signInWithEmail, signUpWithEmail, signOut, getUserProfile, updateUserProfile, resetPassword as resetPasswordEmail } from '@/lib/auth';
 import { UserProfile } from '@shared/schema';
 
 interface AuthContextType {
@@ -11,6 +11,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string, profile?: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (profile: UserProfile) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,9 +32,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
+      // If we're in the middle of signing up, ignore auth state changes
+      if (isSigningUp) {
+        return;
+      }
+      
       setUser(firebaseUser);
       
       if (firebaseUser) {
@@ -51,7 +58,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     return unsubscribe;
-  }, []);
+  }, [isSigningUp]);
 
   const handleSignIn = async (email: string, password: string) => {
     try {
@@ -68,11 +75,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     name: string,
     profile?: Partial<UserProfile>
   ) => {
+    setIsSigningUp(true);
+    setLoading(true);
+    
     try {
       await signUpWithEmail(email, password, name, profile);
+      // After sign up completes, user should be signed out
+      setUser(null);
+      setUserProfile(null);
     } catch (error) {
       console.error('Sign up failed:', error);
       throw error;
+    } finally {
+      setIsSigningUp(false);
+      setLoading(false);
     }
   };
 
@@ -87,7 +103,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Persist profile to Firestore and update local context
   const updateProfile = async (profile: UserProfile) => {
     if (!user) throw new Error('No authenticated user');
     try {
@@ -99,14 +114,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const handleResetPassword = async (email: string) => {
+    try {
+      await resetPasswordEmail(email);
+    } catch (error) {
+      console.error('Password reset failed:', error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     userProfile,
     loading,
     signIn: handleSignIn,
-  signUp: handleSignUp,
+    signUp: handleSignUp,
     signOut: handleSignOut,
     updateProfile,
+    resetPassword: handleResetPassword,
   };
 
   return (
