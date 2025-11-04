@@ -1,7 +1,6 @@
 import { AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -98,7 +97,12 @@ export default function HealthAssessment({
           <CollapsibleContent className="mt-4">
             <div className="p-4 bg-muted/50 rounded-lg">
               <h4 className="font-medium mb-2">Analysis Details:</h4>
-              
+              {/* Medical reasoning from the model (preserve newlines) */}
+              <div className="mb-4 text-sm whitespace-pre-wrap" data-testid="text-medical-reasoning">
+                <span className="font-medium">Medical Reasoning:</span>
+                <div className="mt-2">{reasoning || 'No detailed reasoning available.'}</div>
+              </div>
+
               <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Calories:</span> {nutritionData.calories}

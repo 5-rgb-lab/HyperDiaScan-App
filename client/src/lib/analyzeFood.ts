@@ -12,33 +12,109 @@ export const analyzeFood = async (
   userProfile: UserProfile
 ): Promise<HealthPrediction> => {
   try {
+    // Validate we have complete user profile data
+    console.log("🧑 User Profile:", JSON.stringify(userProfile, null, 2));
+
+    // Quick validation: list missing top-level profile pieces so we can debug why
+    const missingProfileParts: string[] = []
+    if (!userProfile.name) missingProfileParts.push("name")
+    if (!userProfile.age && userProfile.age !== 0) missingProfileParts.push("age")
+    if (!userProfile.demographics) missingProfileParts.push("demographics")
+    if (!userProfile.primaryCondition) missingProfileParts.push("primaryCondition")
+    if (!userProfile.primaryMedical) missingProfileParts.push("primaryMedical")
+    if (!userProfile.diabetesStatus) missingProfileParts.push("diabetesStatus")
+    if (!userProfile.hypertensionStatus) missingProfileParts.push("hypertensionStatus")
+    if (!userProfile.nutrientTargets) missingProfileParts.push("nutrientTargets")
+    if (missingProfileParts.length) {
+      console.warn("⚠️ Missing user profile fields before LLM request:", missingProfileParts)
+    }
+
     const prompt = buildPrompt(nutritionData, userProfile)
+    console.log("🔍 Built Prompt (trimmed):", prompt.slice(0, 1000))
 
-    console.log("🔍 Sending to LLaMA:", prompt)
+    // Include both the textual prompt and the structured user profile in the POST body.
+    // Some local LLM gateways (or dev setups) ignore long prompts or expect structured fields,
+    // so sending the profile explicitly as `metadata` helps diagnose/ensure it's transmitted.
+    const body: Record<string, any> = {
+      model: import.meta.env.VITE_LLM_MODEL || "llama3.2",
+      prompt,
+      metadata: { userProfile },
+      // Also provide a messages array for compatibility with message-based endpoints
+      messages: [
+        { role: "system", content: "You are a nutrition and health expert." },
+        { role: "user", content: prompt },
+        { role: "user", content: `USER_PROFILE_JSON: ${JSON.stringify(userProfile)}` },
+      ],
+      stream: false,
+    }
 
-    const response = await fetch(LLM_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "llama3.2", // 👈 change this to your model name (e.g., "llama3:8b" or "med-llama")
-        prompt,
-        stream: false,
-      }),
-    })
+    console.log("📡 Request to LLM (keys):", Object.keys(body))
 
-    if (!response.ok) throw new Error(`LLM error: ${response.statusText}`)
+    // Add a small timeout using AbortController so we don't hang forever
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 20_000) // 20s
 
-    const result = await response.json()
-    const output = result.response || result.text || ""
+    let response: Response
+    try {
+      response = await fetch(LLM_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
 
-    console.log("🧾 LLaMA Output:", output)
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("❌ Ollama Error Response:", error);
+      throw new Error(`LLM error: ${error}`);
+    }
+
+    let result: any
+    try {
+      result = await response.json()
+    } catch (err) {
+      const text = await response.text().catch(() => "<unreadable body>")
+      console.error("❌ Failed to parse JSON from LLM response. Raw text:", text)
+      throw err
+    }
+
+    console.log("📥 Raw LLM Response:", result)
+
+    // LLM gateways return different shapes. Try several common locations for the text.
+    const outputCandidates = [
+      result.response,
+      result.text,
+      result.output?.[0]?.content,
+      result.result?.content,
+      // Ollama sometimes nests under 'choices' with 'message.content'
+      result.choices?.[0]?.message?.content,
+      result.choices?.[0]?.text,
+      typeof result === "string" ? result : undefined,
+    ]
+
+    const output = outputCandidates.find(Boolean) || ""
+    console.log("🧾 LLM Output (first non-empty):", String(output).slice(0, 1500))
 
     // Parse and validate with Zod
-    const parsed = parseLlmResponse(output)
+    const parsed = parseLlmResponse(String(output))
 
     return parsed
   } catch (error) {
-    console.error("❌ LLaMA unavailable, using fallback:", error)
+    // Helpful debug output when something fails: show what we attempted to send
+    try {
+      console.error("❌ LLM call failed:", error)
+      console.error("Attempted nutrition data:", JSON.stringify(nutritionData))
+      // userProfile may be undefined or partially missing; log defensively
+      // (avoid crashing during logging)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error("Attempted userProfile:", JSON.stringify((userProfile as any) || {}, null, 2))
+    } catch (e) {
+      // ignore logging errors
+    }
+
     return fallbackAnalysis(nutritionData)
   }
 }
@@ -85,7 +161,7 @@ Respond **strictly in JSON** format like this:
 
 {
   "prediction": "Safe" | "Risky",
-  "reasoning": "brief explanation"
+  "reasoning": "Explain how will this food impact the user's health condition based on their profile."
 }
 `
 }

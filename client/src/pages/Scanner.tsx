@@ -64,25 +64,62 @@ export default function Scanner() {
   };
 
   const handleAnalyze = async (data: AnalyzeFoodRequest) => {
-    console.log('Analyzing data:', data);
-    // normalize 'both' to a primary condition for the current UI
+    if (!userProfile || !user) {
+      setShowProfileModal(true);
+      return;
+    }
+
+    // Verify the profile is complete before proceeding
+    if (!isProfileComplete(userProfile)) {
+      setShowProfileModal(true);
+      setToastInfo({
+        title: "❌ Incomplete Profile",
+        description: "Please complete your health profile first.",
+        variant: "destructive"
+      });
+      setOpen(true);
+      return;
+    }
+
+    console.log('🍎 Starting Analysis:');
+    console.log('Food Data:', data);
+    console.log('User Profile:', {
+      ...userProfile,
+      condition: data.condition  // Ensure condition is included
+    });
+    
     setCurrentCondition(data.condition === 'both' ? 'diabetes' : data.condition);
     setCurrentFoodName(data.foodName || '');
-    setLoading(true); // show loader
+    setLoading(true);
 
     try {
-      // FIX: Pass userProfile as the second argument to analyzeFood
-      const result = await analyzeFood(data, userProfile!);
-      console.log('Analysis completed successfully:', result);
+      // Call analyzeFood with validated profile
+      const result = await analyzeFood(data, userProfile);
+      console.log('Analysis Result:', result);
       setHealthResult(result);
       
-      console.log('Analysis result ready for display:', result);
+      // Show success toast with meaningful health insight
+      const severity = result.prediction === "Safe" ? "default" : "destructive";
+      const message = result.prediction === "Safe" 
+        ? "This food appears safe for your condition." 
+        : "This food may need caution with your condition.";
       
-      
+      setToastInfo({
+        title: `${result.prediction === "Safe" ? "✅" : "⚠️"} Analysis Complete`,
+        description: message,
+        variant: severity
+      });
+      setOpen(true);
     } catch (error) {
       console.error('Error analyzing food:', error);
+      setToastInfo({
+        title: "❌ Analysis Failed",
+        description: "Could not analyze food. Please try again.",
+        variant: "destructive"
+      });
+      setOpen(true);
     } finally {
-      setLoading(false); // hide loader
+      setLoading(false);
     }
   };
 
@@ -164,10 +201,14 @@ export default function Scanner() {
               <div className="p-6 rounded-lg shadow-md bg-muted text-center space-y-3">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary mx-auto"></div>
                 <p className="font-medium text-primary">Analyzing your nutrition label...</p>
-                <p className="text-sm text-muted-foreground">This may take a few seconds</p>
+                <p className="text-sm text-muted-foreground">Checking against your health profile...</p>
               </div>
             ) : (
-              <NutritionForm initialData={scannedData} onAnalyze={handleAnalyze} />
+              <NutritionForm 
+                initialData={scannedData} 
+                userCondition={userProfile?.primaryCondition || 'diabetes'}
+                onAnalyze={handleAnalyze} 
+              />
             )}
           </>
         )}

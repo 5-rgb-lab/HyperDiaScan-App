@@ -73,7 +73,7 @@ export default function Profile() {
         </p>
       </div>
 
-      <div id="profile-form" className="max-w-4xl mx-auto p-4 bg-white/80 rounded-lg shadow">
+      <div id="profile-form" className="max-w-4xl mx-auto p-4 bg-white/80 dark:bg-gray-800/80 rounded-lg shadow">
         {user ? (
           <UserProfile 
             user={profileUser!}

@@ -22,11 +22,13 @@ import { Apple, Flame } from "lucide-react";
 
 interface NutritionFormProps {
   initialData?: Partial<AnalyzeFoodRequest>;
+  userCondition?: "diabetes" | "hypertension" | "both";
   onAnalyze: (data: AnalyzeFoodRequest) => void;
 }
 
 export default function NutritionForm({
   initialData,
+  userCondition = "diabetes",
   onAnalyze,
 }: NutritionFormProps) {
   const form = useForm<AnalyzeFoodRequest>({
@@ -40,6 +42,7 @@ export default function NutritionForm({
       sodium: 0,
       fiber: 0,
       sugar: 0,
+      condition: userCondition,
       ...initialData,
     },
   });
