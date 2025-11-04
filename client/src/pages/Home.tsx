@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { subscribeToUserScanHistory } from '@/lib/firestore';
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [dailyStats, setDailyStats] = useState({
     scansToday: 0,
@@ -105,36 +105,21 @@ export default function Home() {
 
   // Health tips rotation
   const [currentTip, setCurrentTip] = useState(0);
-  const healthTips = [
-    {
-      icon: Heart,
-      title: 'Heart Health Tip',
-      content:
-        'Choose foods low in saturated fats and trans fats. Opt for lean proteins like fish, poultry, and legumes.',
-      color: 'from-red-500 to-pink-500',
-    },
-    {
-      icon: Target,
-      title: 'Blood Sugar Management',
-      content:
-        'Pair carbohydrates with protein or healthy fats to help stabilize blood sugar levels throughout the day.',
-      color: 'from-blue-500 to-indigo-500',
-    },
-    {
-      icon: Shield,
-      title: 'Sodium Awareness',
-      content:
-        'Read nutrition labels carefully. Aim for less than 2,300mg of sodium per day to support healthy blood pressure.',
-      color: 'from-green-500 to-teal-500',
-    },
-    {
-      icon: Star,
-      title: 'Portion Control',
-      content:
-        'Use smaller plates and bowls to naturally reduce portion sizes while still feeling satisfied with your meals.',
-      color: 'from-yellow-500 to-orange-500',
-    },
+  
+  // Icons and colors for tips
+  const tipStyles = [
+    { icon: Heart, color: 'from-red-500 to-pink-500', title: '' },
+    { icon: Target, color: 'from-blue-500 to-indigo-500', title: '' },
+    { icon: Shield, color: 'from-green-500 to-teal-500', title: '' },
+    { icon: Star, color: 'from-yellow-500 to-orange-500', title: '' },
+    { icon: Activity, color: 'from-purple-500 to-indigo-500', title: '' },
   ];
+
+  // Get tips from user profile or use defaults
+  const healthTips = userProfile?.tips?.map((tip, index) => ({
+    ...tipStyles[index % tipStyles.length],
+    content: tip.content,
+  })) || [];
 
   const quickActions = [
     { icon: Camera, title: 'Scan Food', href: '/scanner', color: 'from-blue-500 to-cyan-500' },
@@ -151,17 +136,6 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
-      {/* <div className="text-center space-y-4 py-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-            Welcome Back!
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Track your health journey with smart food analysis
-          </p>
-        </div>
-      </div> */}
 
       <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
@@ -229,34 +203,38 @@ export default function Home() {
       </div>
 
       {/* Health Insights & Tips */}
-      <Card className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-blue-950/50 border-0 shadow-lg">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div
-              className={`p-3 rounded-xl bg-gradient-to-br ${healthTips[currentTip].color} shadow-lg flex-shrink-0`}
-            >
-              {React.createElement(healthTips[currentTip].icon, { className: 'w-6 h-6 text-white' })}
+      {healthTips.length > 0 && (
+        <Card className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-blue-950/50 border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div
+                className={`p-3 rounded-xl bg-gradient-to-br ${healthTips[currentTip].color} shadow-lg flex-shrink-0`}
+              >
+                {React.createElement(healthTips[currentTip].icon, { className: 'w-6 h-6 text-white' })}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-2">{healthTips[currentTip].title}</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {healthTips[currentTip].content}
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-2">{healthTips[currentTip].title}</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {healthTips[currentTip].content}
-              </p>
-            </div>
-          </div>
-          <div className="flex justify-center mt-4 gap-2">
-            {healthTips.map((_, index) => (
-              <button
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentTip ? 'bg-blue-500 w-6' : 'bg-gray-300'
-                }`}
-                onClick={() => setCurrentTip(index)}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            {healthTips.length > 1 && (
+              <div className="flex justify-center mt-4 gap-2">
+                {healthTips.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentTip ? 'bg-blue-500 w-6' : 'bg-gray-300'
+                    }`}
+                    onClick={() => setCurrentTip(index)}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Activity */}
       {recentScans.length > 0 && (

@@ -88,6 +88,15 @@ export const userProfileSchema = z.object({
   treatmentManagement: treatmentManagementSchema,
   nutrientTargets: nutrientTargetsSchema,
   demographics: demographicsSchema,
+  tips: z
+  .array(
+    z.object({
+      content: z.string(),
+    })
+  )
+  .max(5)
+  .optional(),
+
 });
 
 // ----------------------------------------------------

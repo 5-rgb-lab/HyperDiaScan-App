@@ -70,7 +70,29 @@ export const createUserProfile = async (user: User, profileData?: Partial<UserPr
         heightCm: profileData?.demographics?.heightCm || 170,
         weightKg: profileData?.demographics?.weightKg || 70,
         activityLevel: 'Sedentary'
-      }
+      },
+      tips: [
+        {
+          content:
+            'Choose foods low in saturated fats and trans fats. Opt for lean proteins like fish, poultry, and legumes.',
+        },
+        {
+          content:
+            'Pair carbohydrates with protein or healthy fats to help stabilize blood sugar levels throughout the day.',
+        },
+        {
+          content:
+            'Read nutrition labels carefully. Aim for less than 2,300mg of sodium per day to support healthy blood pressure.',
+        },
+        {
+          content:
+            'Use smaller plates and bowls to naturally reduce portion sizes while still feeling satisfied with your meals.',
+        },
+        {
+          content:
+            'Drink at least 8 glasses of water daily. Staying hydrated helps maintain energy and control appetite.',
+        },
+      ],
     };
 
     // Save the minimal profile and mark it as incomplete
