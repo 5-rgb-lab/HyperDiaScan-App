@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Apple, Flame } from "lucide-react";
+import { UserProfile } from "@shared/schema";
 
 interface NutritionFormProps {
   initialData?: Partial<AnalyzeFoodRequest>;
@@ -43,26 +44,46 @@ export default function NutritionForm({
       fiber: 0,
       sugar: 0,
       condition: userCondition,
-      ...initialData,
     },
   });
 
   useEffect(() => {
     if (initialData) {
-      Object.entries(initialData).forEach(([key, value]) => {
-        if (value !== undefined) {
-          form.setValue(key as keyof AnalyzeFoodRequest, value);
-        }
-      });
+      // Reset form with initial data
+      const formData = {
+        foodName: initialData.foodName || "",
+        calories: Number(initialData.calories) || 0,
+        carbohydrates: Number(initialData.carbohydrates) || 0,
+        protein: Number(initialData.protein) || 0,
+        fat: Number(initialData.fat) || 0,
+        sodium: Number(initialData.sodium) || 0,
+        fiber: Number(initialData.fiber) || 0,
+        sugar: Number(initialData.sugar) || 0,
+        condition: userCondition,
+      };
+      form.reset(formData); // Use reset instead of setting values individually
     }
-  }, [initialData, form]);
+  }, [initialData, form, userCondition]);
 
   const onSubmit = async (data: AnalyzeFoodRequest) => {
-    console.log("Submitting nutrition data:", data);
-
     try {
+      // Ensure all numeric fields are numbers and not strings
+      const formattedData: AnalyzeFoodRequest = {
+        ...data,
+        calories: Number(data.calories),
+        carbohydrates: Number(data.carbohydrates),
+        protein: Number(data.protein),
+        fat: Number(data.fat),
+        sodium: Number(data.sodium),
+        fiber: Number(data.fiber),
+        sugar: Number(data.sugar),
+        condition: data.condition || userCondition,
+      };
+
+      console.log("Submitting nutrition data:", formattedData);
+
       if (!onAnalyze) throw new Error("onAnalyze function not provided!");
-      await onAnalyze(data);
+      await onAnalyze(formattedData);
     } catch (error) {
       console.error("Error analyzing food:", error);
       alert(
@@ -126,7 +147,7 @@ export default function NutritionForm({
                   { name: "fiber", label: "Dietary Fiber (g)" },
                   { name: "sugar", label: "Sugar (g)" },
                 ].map((fieldData) => (
-                  <FormField
+                  <FormField<AnalyzeFoodRequest>
                     key={fieldData.name}
                     control={form.control}
                     name={fieldData.name as keyof AnalyzeFoodRequest}
@@ -136,11 +157,16 @@ export default function NutritionForm({
                         <FormControl>
                           <Input
                             type="number"
+                            step="any"
+                            min="0"
                             {...field}
-                            onChange={(e) =>
-                              field.onChange(parseFloat(e.target.value) || 0)
-                            }
+                            value={typeof field.value === 'number' ? (field.value === 0 ? "" : field.value) : ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              field.onChange(value === "" ? 0 : Math.max(0, parseFloat(value) || 0));
+                            }}
                           />
+
                         </FormControl>
                       </FormItem>
                     )}

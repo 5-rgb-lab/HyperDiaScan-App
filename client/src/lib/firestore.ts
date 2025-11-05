@@ -8,7 +8,9 @@ import {
   deleteDoc, 
   doc,
   onSnapshot,
-  Unsubscribe 
+  Unsubscribe,
+  updateDoc,
+  DocumentData
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { ScanRecord, InsertScanRecord } from '@shared/schema';
@@ -114,5 +116,36 @@ export const subscribeToUserScanHistory = (
       } as ScanRecord);
     });
     onUpdate(scanRecords);
+  });
+};
+
+export const updateUserHealthTips = async (userId: string, healthTips: { content: string }[]): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      tips: healthTips,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error updating user health tips:', error);
+    throw error;
+  }
+};
+
+export const subscribeToUserProfile = (
+  userId: string,
+  onUpdate: (profile: DocumentData | undefined) => void
+): Unsubscribe => {
+  const userRef = doc(db, 'users', userId);
+  
+  return onSnapshot(userRef, (doc) => {
+    if (doc.exists()) {
+      onUpdate(doc.data());
+    } else {
+      onUpdate(undefined);
+    }
+  }, (error) => {
+    console.error('Error subscribing to user profile:', error);
+    onUpdate(undefined);
   });
 };

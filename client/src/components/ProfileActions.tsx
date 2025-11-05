@@ -25,14 +25,18 @@ export default function ProfileActions({
             type="button"
             variant="outline"
             onClick={() => {
-              form.reset(originalProfile)
+              // Reset to the form's default values (emptyProfile) to avoid uncontrolled inputs
+              form.reset()
               setIsEditing(false)
             }}
           >
             Cancel
           </Button>
 
-          <Button type="submit" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:opacity-90">
+          <Button
+            type="submit"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:opacity-90"
+          >
             Save Changes
           </Button>
         </>

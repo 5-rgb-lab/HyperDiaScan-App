@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { subscribeToUserScanHistory } from '@/lib/firestore';
+import { subscribeToUserScanHistory, subscribeToUserProfile } from '@/lib/firestore';
 
 export default function Home() {
   const { user, userProfile } = useAuth();
@@ -103,8 +103,9 @@ export default function Home() {
     }
   };
 
-  // Health tips rotation
+  // Health tips state and rotation
   const [currentTip, setCurrentTip] = useState(0);
+  const [healthTips, setHealthTips] = useState<Array<{icon: any, color: string, title: string, content: string}>>([]);
   
   // Icons and colors for tips
   const tipStyles = [
@@ -115,11 +116,31 @@ export default function Home() {
     { icon: Activity, color: 'from-purple-500 to-indigo-500', title: '' },
   ];
 
-  // Get tips from user profile or use defaults
-  const healthTips = userProfile?.tips?.map((tip, index) => ({
-    ...tipStyles[index % tipStyles.length],
-    content: tip.content,
-  })) || [];
+  // Subscribe to user profile changes for real-time tips updates
+  useEffect(() => {
+    if (!user) {
+      setHealthTips([]);
+      return;
+    }
+
+    const unsubscribe = subscribeToUserProfile(user.uid, (profile: { tips?: Array<{ content: string }> } | undefined) => {
+      if (profile?.tips) {
+        const formattedTips = profile.tips.map((tip: { content: string }, index: number) => ({
+          ...tipStyles[index % tipStyles.length],
+          content: tip.content,
+        }));
+        setHealthTips(formattedTips);
+        // Reset current tip index if it's out of bounds
+        if (currentTip >= formattedTips.length) {
+          setCurrentTip(0);
+        }
+      } else {
+        setHealthTips([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const quickActions = [
     { icon: Camera, title: 'Scan Food', href: '/scanner', color: 'from-blue-500 to-cyan-500' },

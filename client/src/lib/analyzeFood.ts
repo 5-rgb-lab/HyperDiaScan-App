@@ -1,6 +1,5 @@
 import { AnalyzeFoodRequest, UserProfile, HealthPrediction, healthPredictionSchema } from "@shared/schema"
 
-// You can change this if you’re using LM Studio, Ollama, or a local API gateway
 const LLM_URL = import.meta.env.VITE_LOCAL_LLM_URL || "http://localhost:11434/api/generate"
 
 /**
@@ -12,10 +11,10 @@ export const analyzeFood = async (
   userProfile: UserProfile
 ): Promise<HealthPrediction> => {
   try {
-    // Validate we have complete user profile data
-    console.log("🧑 User Profile:", JSON.stringify(userProfile, null, 2));
+    console.log("🧑 User Profile:", JSON.stringify(userProfile, null, 2))
+    console.log("🍎 Nutrition Data:", JSON.stringify(nutritionData, null, 2))
 
-    // Quick validation: list missing top-level profile pieces so we can debug why
+    // Validate userProfile
     const missingProfileParts: string[] = []
     if (!userProfile.name) missingProfileParts.push("name")
     if (!userProfile.age && userProfile.age !== 0) missingProfileParts.push("age")
@@ -25,21 +24,35 @@ export const analyzeFood = async (
     if (!userProfile.diabetesStatus) missingProfileParts.push("diabetesStatus")
     if (!userProfile.hypertensionStatus) missingProfileParts.push("hypertensionStatus")
     if (!userProfile.nutrientTargets) missingProfileParts.push("nutrientTargets")
+    
+    // Log validation results
     if (missingProfileParts.length) {
       console.warn("⚠️ Missing user profile fields before LLM request:", missingProfileParts)
+      console.warn("❌ User Profile Validation Failed - Details:", {
+        missingFields: missingProfileParts,
+        profileReceived: userProfile
+      })
+    } else {
+      console.log("✅ User Profile Validation Passed")
+    }
+
+    // Validate nutrition data
+    const missingNutrition: string[] = []
+    if (nutritionData.calories === undefined) missingNutrition.push("calories")
+    if (nutritionData.carbohydrates === undefined) missingNutrition.push("carbohydrates")
+    if (nutritionData.sodium === undefined) missingNutrition.push("sodium")
+    
+    if (missingNutrition.length) {
+      console.warn("⚠️ Missing nutrition data fields:", missingNutrition)
     }
 
     const prompt = buildPrompt(nutritionData, userProfile)
     console.log("🔍 Built Prompt (trimmed):", prompt.slice(0, 1000))
 
-    // Include both the textual prompt and the structured user profile in the POST body.
-    // Some local LLM gateways (or dev setups) ignore long prompts or expect structured fields,
-    // so sending the profile explicitly as `metadata` helps diagnose/ensure it's transmitted.
     const body: Record<string, any> = {
       model: import.meta.env.VITE_LLM_MODEL || "llama3.2",
       prompt,
       metadata: { userProfile },
-      // Also provide a messages array for compatibility with message-based endpoints
       messages: [
         { role: "system", content: "You are a nutrition and health expert." },
         { role: "user", content: prompt },
@@ -48,11 +61,8 @@ export const analyzeFood = async (
       stream: false,
     }
 
-    console.log("📡 Request to LLM (keys):", Object.keys(body))
-
-    // Add a small timeout using AbortController so we don't hang forever
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 20_000) // 20s
+    const timeout = setTimeout(() => controller.abort(), 20_000)
 
     let response: Response
     try {
@@ -67,9 +77,15 @@ export const analyzeFood = async (
     }
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("❌ Ollama Error Response:", error);
-      throw new Error(`LLM error: ${error}`);
+      const error = await response.text()
+      console.error("❌ Ollama Error Response:", error)
+      console.error("Request details:", {
+        url: LLM_URL,
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+      throw new Error(`LLM error: ${error}`)
     }
 
     let result: any
@@ -77,19 +93,22 @@ export const analyzeFood = async (
       result = await response.json()
     } catch (err) {
       const text = await response.text().catch(() => "<unreadable body>")
-      console.error("❌ Failed to parse JSON from LLM response. Raw text:", text)
+      console.error("❌ Failed to parse JSON from LLM response.", {
+        error: err,
+        rawText: text,
+        status: response.status,
+        contentType: response.headers.get('content-type')
+      })
       throw err
     }
 
     console.log("📥 Raw LLM Response:", result)
 
-    // LLM gateways return different shapes. Try several common locations for the text.
     const outputCandidates = [
       result.response,
       result.text,
       result.output?.[0]?.content,
       result.result?.content,
-      // Ollama sometimes nests under 'choices' with 'message.content'
       result.choices?.[0]?.message?.content,
       result.choices?.[0]?.text,
       typeof result === "string" ? result : undefined,
@@ -98,29 +117,20 @@ export const analyzeFood = async (
     const output = outputCandidates.find(Boolean) || ""
     console.log("🧾 LLM Output (first non-empty):", String(output).slice(0, 1500))
 
-    // Parse and validate with Zod
     const parsed = parseLlmResponse(String(output))
-
     return parsed
   } catch (error) {
-    // Helpful debug output when something fails: show what we attempted to send
+    console.error("❌ LLM call failed:", error)
     try {
-      console.error("❌ LLM call failed:", error)
       console.error("Attempted nutrition data:", JSON.stringify(nutritionData))
-      // userProfile may be undefined or partially missing; log defensively
-      // (avoid crashing during logging)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.error("Attempted userProfile:", JSON.stringify((userProfile as any) || {}, null, 2))
-    } catch (e) {
-      // ignore logging errors
-    }
-
+    } catch {}
     return fallbackAnalysis(nutritionData)
   }
 }
 
 /**
- * Builds a structured and informative prompt for the local LLaMA model.
+ * Builds structured LLM prompt with 5 health tips.
  */
 function buildPrompt(nutrition: AnalyzeFoodRequest, user: UserProfile): string {
   return `
@@ -135,13 +145,15 @@ Analyze if the following food is "Safe" or "Risky" for the user based on their f
 - Weight: ${user.demographics.weightKg} kg
 - Activity: ${user.demographics.activityLevel}
 - Primary Condition: ${user.primaryCondition}
+${user.primaryCondition === 'diabetes' || user.primaryCondition === 'both' ? `
 - Diabetes Type: ${user.primaryMedical.diabetesType}
-- Hypertension Type: ${user.primaryMedical.hypertensionType}
 - Latest HbA1c: ${user.diabetesStatus.latestHbA1c}
+- Daily Carb Limit: ${user.nutrientTargets.dailyCarbLimit}` : ''}
+${user.primaryCondition === 'hypertension' || user.primaryCondition === 'both' ? `
+- Hypertension Type: ${user.primaryMedical.hypertensionType}
 - Blood Pressure: ${user.hypertensionStatus.currentBP.systolic}/${user.hypertensionStatus.currentBP.diastolic}
+- Daily Sodium Limit: ${user.nutrientTargets.dailySodiumLimit}` : ''}
 - Daily Calorie Target: ${user.nutrientTargets.dailyCalorieTarget}
-- Daily Sodium Limit: ${user.nutrientTargets.dailySodiumLimit}
-- Daily Carb Limit: ${user.nutrientTargets.dailyCarbLimit}
 
 ### FOOD NUTRITION
 - Food Name: ${nutrition.foodName || "Unnamed Food"}
@@ -161,13 +173,20 @@ Respond **strictly in JSON** format like this:
 
 {
   "prediction": "Safe" | "Risky",
-  "reasoning": "Explain how will this food impact the user's health condition based on their profile."
+  "reasoning": "Explain how this food impacts the user's health condition based on their profile.",
+  "healthTip": [
+    { "content": "Short actionable tip 1" },
+    { "content": "Short actionable tip 2" },
+    { "content": "Short actionable tip 3" },
+    { "content": "Short actionable tip 4" },
+    { "content": "Short actionable tip 5" }
+  ]
 }
 `
 }
 
 /**
- * Safely parses and validates model output using Zod schema.
+ * Parses and validates model output with Zod.
  */
 function parseLlmResponse(output: string): HealthPrediction {
   try {
@@ -177,30 +196,91 @@ function parseLlmResponse(output: string): HealthPrediction {
     const parsedJson = JSON.parse(jsonMatch[0])
     return healthPredictionSchema.parse(parsedJson)
   } catch (err) {
-    console.warn("⚠️ LLaMA output parsing failed, fallback to heuristic:", err)
+    console.warn("⚠️ LLaMA output parsing failed, using heuristic fallback:", err)
 
-    // Fallback heuristic if model output isn't valid JSON
     if (/risky/i.test(output)) {
-      return { prediction: "Risky", reasoning: output.trim() }
+      return {
+        prediction: "Risky",
+        reasoning: output.trim(),
+        healthTip: [
+          { content: "Choose lower-sodium or lower-sugar alternatives." },
+          { content: "Avoid processed foods with hidden sodium." },
+          { content: "Stay hydrated to help regulate blood pressure." },
+          { content: "Pair carbs with protein or fiber to slow absorption." },
+          { content: "Monitor portion sizes for better control." },
+        ],
+      }
     }
-    return { prediction: "Safe", reasoning: output.trim() }
+
+    return {
+      prediction: "Safe",
+      reasoning: output.trim(),
+      healthTip: [
+        { content: "Maintain balanced meals across the day." },
+        { content: "Stay consistent with meal timing." },
+        { content: "Include vegetables for fiber and nutrients." },
+        { content: "Keep salt and sugar within daily limits." },
+        { content: "Stay hydrated and active regularly." },
+      ],
+    }
   }
 }
 
 /**
- * Simple local fallback if LLaMA is unreachable.
+ * Fallback if LLM is unreachable.
  */
 function fallbackAnalysis(data: AnalyzeFoodRequest): HealthPrediction {
   const { condition, sodium, carbohydrates, calories } = data
 
   if (condition === "hypertension") {
     if (sodium > 600)
-      return { prediction: "Risky", reasoning: `High sodium (${sodium}mg) not ideal for hypertension.` }
-    return { prediction: "Safe", reasoning: `Sodium within safe range (${sodium}mg).` }
+      return {
+        prediction: "Risky",
+        reasoning: `High sodium (${sodium}mg) not ideal for hypertension.`,
+        healthTip: [
+          { content: "Opt for low-sodium foods or fresh ingredients." },
+          { content: "Use herbs or spices instead of salt." },
+          { content: "Avoid processed snacks and canned foods." },
+          { content: "Check labels for sodium content." },
+          { content: "Monitor blood pressure after salty meals." },
+        ],
+      }
+
+    return {
+      prediction: "Safe",
+      reasoning: `Sodium within safe range (${sodium}mg).`,
+      healthTip: [
+        { content: "Maintain current sodium intake." },
+        { content: "Balance meals with potassium-rich foods." },
+        { content: "Continue monitoring blood pressure." },
+        { content: "Stay hydrated throughout the day." },
+        { content: "Include regular physical activity." },
+      ],
+    }
   }
 
-  // Diabetes
   if (carbohydrates > 45 || calories > 400)
-    return { prediction: "Risky", reasoning: `High carbohydrate or calorie content.` }
-  return { prediction: "Safe", reasoning: `Carbs and calories are within moderate range.` }
+    return {
+      prediction: "Risky",
+      reasoning: `High carbohydrate or calorie content.`,
+      healthTip: [
+        { content: "Prefer smaller portions or half-servings." },
+        { content: "Combine carbs with fiber-rich foods." },
+        { content: "Avoid sugary beverages with the meal." },
+        { content: "Track total daily carbohydrate intake." },
+        { content: "Include lean protein for balance." },
+      ],
+    }
+
+  return {
+    prediction: "Safe",
+    reasoning: `Carbs and calories are within moderate range.`,
+    healthTip: [
+      { content: "Keep portion sizes steady." },
+      { content: "Add vegetables for more fiber." },
+      { content: "Stay hydrated to support digestion." },
+      { content: "Limit processed carbs when possible." },
+      { content: "Continue consistent meal patterns." },
+    ],
+  }
 }

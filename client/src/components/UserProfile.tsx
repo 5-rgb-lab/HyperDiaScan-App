@@ -15,8 +15,9 @@ import DemographicsSection from "./DemographicSection"
 import MedicalSection from "./MedicalSection"
 import BMISection from "./BMISection"
 import ProfileActions from "./ProfileActions"
-import { User, MapPin, HeartPulse, Activity, Pill } from "lucide-react"
+import { User, MapPin, HeartPulse, Activity, Pill, UtensilsCrossed } from "lucide-react"
 import TreatmentSection from "./TreatmentSection"
+import DailyIntakeSection from "./DailyIntakeSection"
 
 interface UserProfileProps {
   user: {
@@ -34,16 +35,86 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // Provide a complete default profile shape so form fields are always controlled.
+  const emptyProfile: UserProfileType = {
+    name: user.profile?.name || '',
+    email: user.profile?.email || user.email || '',
+    age: user.profile?.age ?? 18,
+    primaryCondition: (user.profile?.primaryCondition as any) || 'diabetes',
+    primaryMedical: user.profile?.primaryMedical || {
+      diabetesType: 'None',
+      hypertensionType: 'None',
+    },
+    diabetesStatus: user.profile?.diabetesStatus || {
+      latestHbA1c: 0,
+      hypoglycemiaFrequency: 'Rare',
+    },
+    hypertensionStatus: user.profile?.hypertensionStatus || {
+      currentBP: { systolic: 120, diastolic: 80 },
+    },
+    treatmentManagement: user.profile?.treatmentManagement || {
+      diabetesManagement: {
+        insulinUse: false,
+        insulinType: 'Short-acting',
+        insulinTiming: 'Before Meals',
+      },
+      hypertensionManagement: {
+        antihypertensiveMeds: [],
+        medicationTiming: 'Morning',
+      },
+    },
+    nutrientTargets: user.profile?.nutrientTargets || {
+      dailyCalorieTarget: 2000,
+      dailyCarbLimit: 200,
+      dailySodiumLimit: 2300,
+      dailySatFatLimit: 20,
+    },
+    demographics: user.profile?.demographics || {
+      biologicalSex: 'Male',
+      heightCm: 170,
+      weightKg: 70,
+      activityLevel: 'Sedentary',
+    },
+    tips: user.profile?.tips || [],
+  }
+
   const form = useForm<UserProfileType>({
     resolver: zodResolver(userProfileSchema),
-    defaultValues: user.profile || {},
+    // Always initialize with the full emptyProfile so all inputs are controlled
+    defaultValues: emptyProfile,
   })
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user.id) return
       const profileData = await getUserProfile(user.id)
-      if (profileData) form.reset(profileData)
+      // Merge fetched profile with emptyProfile to ensure all nested keys exist
+      if (profileData) {
+        const merged = {
+          ...emptyProfile,
+          ...profileData,
+          demographics: { ...emptyProfile.demographics, ...(profileData.demographics || {}) },
+          primaryMedical: { ...emptyProfile.primaryMedical, ...(profileData.primaryMedical || {}) },
+          diabetesStatus: { ...emptyProfile.diabetesStatus, ...(profileData.diabetesStatus || {}) },
+          hypertensionStatus: { ...emptyProfile.hypertensionStatus, ...(profileData.hypertensionStatus || {}) },
+          treatmentManagement: {
+            diabetesManagement: {
+              ...emptyProfile.treatmentManagement.diabetesManagement,
+              ...(profileData.treatmentManagement?.diabetesManagement || {}),
+            },
+            hypertensionManagement: {
+              ...emptyProfile.treatmentManagement.hypertensionManagement,
+              ...(profileData.treatmentManagement?.hypertensionManagement || {}),
+            },
+          },
+          nutrientTargets: { ...emptyProfile.nutrientTargets, ...(profileData.nutrientTargets || {}) },
+          tips: profileData.tips || emptyProfile.tips,
+        } as UserProfileType
+
+        form.reset(merged)
+      } else {
+        form.reset(emptyProfile)
+      }
       setLoading(false)
     }
     fetchProfile()
@@ -122,6 +193,19 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
             </AccordionTrigger>
             <AccordionContent className={cardClass}>
               <TreatmentSection form={form} isEditing={isEditing} />
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Daily Intake */}
+          <AccordionItem value="daily-intake">
+            <AccordionTrigger className="flex items-center gap-3">
+              <div className={triggerWrapper("from-teal-500", "to-emerald-500 dark:from-teal-700 dark:to-emerald-700")}>
+                <UtensilsCrossed className="w-5 h-5" />
+              </div>
+              <span className="font-semibold text-foreground">Daily Intake Targets</span>
+            </AccordionTrigger>
+            <AccordionContent className={cardClass}>
+              <DailyIntakeSection form={form} isEditing={isEditing} />
             </AccordionContent>
           </AccordionItem>
 

@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
+      console.log('AuthContext:onAuthChange fired. isSigningUp=', isSigningUp, 'firebaseUser=', firebaseUser?.uid || null)
       // If we're in the middle of signing up, ignore auth state changes
       if (isSigningUp) {
         return;
@@ -106,7 +107,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const updateProfile = async (profile: UserProfile) => {
     if (!user) throw new Error('No authenticated user');
     try {
+      console.log('AuthContext: updateProfile called for user', user.uid)
       const updated = await updateUserProfile(user.uid, profile);
+      console.log('AuthContext: updateUserProfile result:', updated)
       if (updated) setUserProfile(updated);
     } catch (error) {
       console.error('Failed to update profile in AuthContext:', error);

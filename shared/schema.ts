@@ -15,9 +15,16 @@ export const nutritionDataSchema = z.object({
 
 export const healthConditionSchema = z.enum(["diabetes", "hypertension", "both"]);
 
+// Tip schema is used by both health predictions and user profiles
+export const healthTipSchema = z.object({
+  content: z.string(),
+});
+
+// Health prediction includes reasoning and personalized tips
 export const healthPredictionSchema = z.object({
   prediction: z.enum(["Safe", "Risky"]),
   reasoning: z.string(),
+  healthTip: z.array(healthTipSchema),
 });
 
 // ----------------------------------------------------
@@ -32,7 +39,7 @@ export const primaryMedicalSchema = z.object({
 
 // 2️⃣ Diabetes-Specific Status
 export const diabetesStatusSchema = z.object({
-  latestHbA1c: z.number().min(0).max(20),
+  latestHbA1c: z.number().min(0).max(200),
   hypoglycemiaFrequency: z.enum(["Rare", "Occasional", "Frequent"]),
 });
 
@@ -102,15 +109,15 @@ export const userProfileSchema = z.object({
 // ----------------------------------------------------
 // 🔍 Scan Record Schema
 // ----------------------------------------------------
-// export const scanRecordSchema = z.object({
-//   id: z.string(),
-//   userId: z.string(),
-//   timestamp: z.string().datetime(),
-//   foodName: z.string().optional(),
-//   nutritionData: nutritionDataSchema,
-//   condition: healthConditionSchema,
-//   prediction: healthPredictionSchema,
-// });
+export const scanRecordSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  timestamp: z.string().datetime(),
+  foodName: z.string().optional(),
+  nutritionData: nutritionDataSchema,
+  condition: healthConditionSchema,
+  prediction: healthPredictionSchema,
+});
 
 // ----------------------------------------------------
 // 🔐 Firebase User Schema
@@ -137,20 +144,23 @@ export type NutrientTargets = z.infer<typeof nutrientTargetsSchema>;
 export type Demographics = z.infer<typeof demographicsSchema>;
 
 export type UserProfile = z.infer<typeof userProfileSchema>;
-// export type ScanRecord = z.infer<typeof scanRecordSchema>;
-// export type FirebaseUser = z.infer<typeof firebaseUserSchema>;
+export type ScanRecord = z.infer<typeof scanRecordSchema>;
 
 // ----------------------------------------------------
 // 🧾 Insert Schemas (for forms or writes)
 // ----------------------------------------------------
 export const insertUserProfileSchema = userProfileSchema.omit({});
-// export const insertScanRecordSchema = scanRecordSchema.omit({ id: true, timestamp: true });
+export const insertScanRecordSchema = scanRecordSchema.omit({ id: true, timestamp: true });
 
 export const analyzeFoodSchema = nutritionDataSchema.extend({
   condition: healthConditionSchema,
   foodName: z.string().optional(),
+  scanStats: z.object({
+    safeScans: z.number(),
+    riskyScans: z.number()
+  }).optional(),
 });
 
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
-// export type InsertScanRecord = z.infer<typeof insertScanRecordSchema>;
+export type InsertScanRecord = z.infer<typeof insertScanRecordSchema>;
 export type AnalyzeFoodRequest = z.infer<typeof analyzeFoodSchema>;

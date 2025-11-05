@@ -4,7 +4,7 @@ import NutritionForm from '@/components/NutritionForm';
 import HealthAssessment from '@/components/HealthAssessment';
 import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
 import { analyzeFood } from '@/lib/analyzeFood';
-import { saveScanRecord } from '@/lib/firestore';
+import { saveScanRecord, updateUserHealthTips } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { userProfileSchema } from '@shared/schema';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -65,12 +65,14 @@ export default function Scanner() {
 
   const handleAnalyze = async (data: AnalyzeFoodRequest) => {
     if (!userProfile || !user) {
+      console.warn("No user profile found:", { user: !!user, profile: !!userProfile });
       setShowProfileModal(true);
       return;
     }
 
     // Verify the profile is complete before proceeding
     if (!isProfileComplete(userProfile)) {
+      console.warn("Incomplete user profile detected");
       setShowProfileModal(true);
       setToastInfo({
         title: "❌ Incomplete Profile",
@@ -83,17 +85,13 @@ export default function Scanner() {
 
     console.log('🍎 Starting Analysis:');
     console.log('Food Data:', data);
-    console.log('User Profile:', {
-      ...userProfile,
-      condition: data.condition  // Ensure condition is included
-    });
     
     setCurrentCondition(data.condition === 'both' ? 'diabetes' : data.condition);
     setCurrentFoodName(data.foodName || '');
     setLoading(true);
 
     try {
-      // Call analyzeFood with validated profile
+      // Send the raw profile without modifying the condition
       const result = await analyzeFood(data, userProfile);
       console.log('Analysis Result:', result);
       setHealthResult(result);
@@ -127,28 +125,39 @@ export default function Scanner() {
     if (!user || !scannedData || !healthResult) return;
     
     try {
-      await saveScanRecord(user.uid, {
+      // Save scan record without health tips
+      const scanRecord = {
         userId: user.uid,
         foodName: currentFoodName || "Unnamed Food", 
         nutritionData: scannedData,
         condition: currentCondition,
-        prediction: healthResult,
-      });
+        prediction: {
+          ...healthResult,
+
+        },
+      };
+      await saveScanRecord(user.uid, scanRecord);
+
+      // Update user's health tips if available
+      if (healthResult.healthTip?.length > 0) {
+        await updateUserHealthTips(user.uid, healthResult.healthTip);
+      }
+
       setToastInfo({
         title: "✅ Saved!",
-        description: "Scan successfully saved to history.",
+        description: "Scan and health tips saved successfully.",
         variant: "default",
-      })
-      setOpen(true)
-      console.log('Scan saved to history');
+      });
+      setOpen(true);
+      console.log('Scan and tips saved');
     } catch (error) {
       setToastInfo({
         title: "❌ Error",
         description: "Could not save scan. Please try again.",
         variant: "destructive",
-      })
-      setOpen(true)
-      console.error('Error saving to history:', error);
+      });
+      setOpen(true);
+      console.error('Error saving scan and tips:', error);
     }
   };
 
@@ -173,14 +182,6 @@ export default function Scanner() {
         </DialogContent>
       </Dialog>
       <div className="space-y-6">
-        {/* <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold" data-testid="text-scanner-title">
-            Nutrition Label Scanner
-          </h1>
-          <p className="text-muted-foreground">
-            Upload a photo of your food's nutrition label for instant health analysis
-          </p>
-        </div> */}
 
       <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
