@@ -3,6 +3,7 @@ import CameraScanner from '@/components/CameraScanner';
 import NutritionForm from '@/components/NutritionForm';
 import HealthAssessment from '@/components/HealthAssessment';
 import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
+import { createScanAuditLog } from '@/admin/lib/auditLog';
 import { analyzeFood } from '@/lib/analyzeFood';
 import { saveScanRecord, updateUserHealthTips } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
@@ -133,10 +134,23 @@ export default function Scanner() {
         condition: currentCondition,
         prediction: {
           ...healthResult,
-
         },
       };
       await saveScanRecord(user.uid, scanRecord);
+
+      // Create audit log for successful scan analysis and save
+      await createScanAuditLog(
+        user.uid,
+        'scan.saved',
+        `Food scan saved: ${currentFoodName || "Unnamed Food"} (${healthResult.prediction})`,
+        'success',
+        {
+          foodName: currentFoodName || "Unnamed Food",
+          prediction: healthResult.prediction,
+          condition: currentCondition,
+          hasHealthTips: healthResult.healthTip?.length > 0
+        }
+      );
 
       // Update user's health tips if available
       if (healthResult.healthTip?.length > 0) {
@@ -151,6 +165,18 @@ export default function Scanner() {
       setOpen(true);
       console.log('Scan and tips saved');
     } catch (error) {
+      // Create audit log for failed scan save
+      await createScanAuditLog(
+        user.uid,
+        'scan.saved',
+        `Failed to save food scan: ${currentFoodName || "Unnamed Food"}`,
+        'error',
+        {
+          foodName: currentFoodName || "Unnamed Food",
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      );
+
       setToastInfo({
         title: "❌ Error",
         description: "Could not save scan. Please try again.",

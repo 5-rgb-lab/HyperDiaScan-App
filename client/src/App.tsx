@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Switch, Route } from "wouter";
+import React, { useState, Suspense } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AdminProvider } from "@/admin/context/AdminContext";
 import AppHeader from "@/components/AppHeader";
 import Navigation from "@/components/Navigation";
 import AuthForm from "@/components/AuthForm";
@@ -16,6 +17,12 @@ import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
+// Lazy load admin components
+const AdminLayout = React.lazy(() => import('@/admin/components/AdminLayout'));
+const Dashboard = React.lazy(() => import('@/admin/pages/Dashboard'));
+const Users = React.lazy(() => import('@/admin/pages/Users'));
+const AuditLogs = React.lazy(() => import('@/admin/pages/AuditLogs'));
+
 function Router() {
   return (
     <Switch>
@@ -23,6 +30,38 @@ function Router() {
       <Route path="/scanner" component={Scanner} />
       <Route path="/history" component={History} />
       <Route path="/profile" component={Profile} />
+      
+      {/* Admin Routes (explicit top-level routes so subpaths match) */}
+      <Route path="/admin">
+        {() => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AdminLayout>
+              <Dashboard />
+            </AdminLayout>
+          </Suspense>
+        )}
+      </Route>
+
+      <Route path="/admin/users">
+        {() => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AdminLayout>
+              <Users />
+            </AdminLayout>
+          </Suspense>
+        )}
+      </Route>
+
+      <Route path="/admin/audit-logs">
+        {() => (
+          <Suspense fallback={<div>Loading...</div>}>
+            <AdminLayout>
+              <AuditLogs />
+            </AdminLayout>
+          </Suspense>
+        )}
+      </Route>
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -30,6 +69,7 @@ function Router() {
 
 function AuthenticatedApp() {
   const { user, userProfile, loading, signOut } = useAuth();
+  const [location] = useLocation();
 
   if (loading) {
     return (
@@ -50,6 +90,11 @@ function AuthenticatedApp() {
     // Navigate to profile using wouter
     window.history.pushState({}, '', '/profile');
   };
+
+  // If the current path is an admin route, render only the admin Router
+  if (location.startsWith('/admin')) {
+    return <Router />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,7 +122,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <AuthenticatedApp />
+          <AdminProvider>
+            <AuthenticatedApp />
+          </AdminProvider>
         </AuthProvider>
         <Toaster />
       </TooltipProvider>

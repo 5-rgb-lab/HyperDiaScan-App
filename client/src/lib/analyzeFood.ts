@@ -167,7 +167,7 @@ ${user.primaryCondition === 'hypertension' || user.primaryCondition === 'both' ?
 
 ### TASK
 Determine if this food is **Safe** or **Risky** for this user. 
-Base your decision on nutritional suitability and disease management (e.g., sodium for hypertension, carbs for diabetes).
+Base your decision on nutritional suitability and how user manage the condition (e.g., sodium for hypertension, carbs for diabetes).
 
 Respond **strictly in JSON** format like this:
 

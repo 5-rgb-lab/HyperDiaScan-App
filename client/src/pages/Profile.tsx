@@ -4,10 +4,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { userProfileSchema } from '@shared/schema';
+import { useAdmin } from '@/admin/context/AdminContext';
+import { useLocation } from 'wouter';
 
 export default function Profile() {
   const { user, userProfile, updateProfile, signOut } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const { isAdmin, isLoading: adminLoading } = useAdmin();
+  const [, setLocation] = useLocation();
 
   
 
@@ -71,6 +75,14 @@ export default function Profile() {
         <p className="text-muted-foreground">
           Manage your account settings and health information
         </p>
+        {/* Admin entry button (only visible to admins) */}
+        {adminLoading ? null : isAdmin ? (
+          <div className="mt-4">
+            <Button variant="outline" onClick={() => setLocation('/admin')}>
+              Open Admin Dashboard
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <div id="profile-form" className="max-w-4xl mx-auto p-4 bg-white/80 dark:bg-gray-800/80 rounded-lg shadow">
