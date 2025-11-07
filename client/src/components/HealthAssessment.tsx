@@ -16,7 +16,9 @@ interface HealthAssessmentProps {
     fat: number;
     sodium: number;
     fiber: number;
-    sugar: number;
+    // support both legacy `sugar` and new `totalSugars`
+    sugar?: number;
+    totalSugars?: number;
   };
 }
 
@@ -123,7 +125,7 @@ export default function HealthAssessment({
                   <span className="font-medium">Fiber:</span> {nutritionData.fiber}g
                 </div>
                 <div>
-                  <span className="font-medium">Sugar:</span> {nutritionData.sugar}g
+                  <span className="font-medium">Sugar:</span> {(nutritionData.totalSugars ?? nutritionData.sugar ?? 0)}g
                 </div>
               </div>
             </div>

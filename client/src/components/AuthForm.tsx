@@ -90,15 +90,15 @@ export default function AuthForm() {
   const onSignUp = async (data: SignUpData) => {
     setIsLoading(true);
     try {
-      // Build flat profileData to match createUserProfile expectations
+      // Build profileData to match createUserProfile expectations
       const profileData = {
         primaryCondition: data.primaryCondition,
-        age: data.age,
         demographics: {
+          age: data.age,
           biologicalSex: data.biologicalSex,
           heightCm: data.heightCm,
           weightKg: data.weightKg,
-          activityLevel: 'Sedentary' as const// default value
+          activityLevel: 'Sedentary' as const // default value
         }
       };
 
