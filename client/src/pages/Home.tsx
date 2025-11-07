@@ -16,10 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { subscribeToUserScanHistory } from '@/lib/firestore';
+import { subscribeToUserScanHistory, subscribeToUserProfile } from '@/lib/firestore';
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const [dailyStats, setDailyStats] = useState({
     scansToday: 0,
@@ -51,7 +51,17 @@ export default function Home() {
 
       const mapped = sorted.map((r) => ({
         name: r.foodName || 'Unknown Food',
-        result: typeof r.prediction === 'string' ? r.prediction : r.prediction?.prediction || 'unknown',
+        // Normalize stored prediction to a user-friendly display string
+        // r.prediction may be a string like 'Safe'|'Risky' or an object { prediction: 'Safe', reasoning }
+        result: (() => {
+          const raw = typeof r.prediction === 'string' ? r.prediction : r.prediction?.prediction || 'unknown';
+          if (!raw) return 'unknown';
+          const low = String(raw).toLowerCase();
+          if (low === 'safe') return 'Safe for Consumption';
+          if (low === 'risky') return 'Not Recommended';
+          // fallback: capitalize
+          return String(raw);
+        })(),
         time: new Date(r.timestamp).toLocaleString(),
       }));
 
@@ -62,12 +72,14 @@ export default function Home() {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
       const scansToday = rawRecords.filter((r) => new Date(r.timestamp) >= startOfDay).length;
-      const safeScans = rawRecords.filter(
-        (r) => (r.prediction?.prediction || r.prediction) === 'safe'
-      ).length;
-      const riskyScans = rawRecords.filter(
-        (r) => (r.prediction?.prediction || r.prediction) === 'risky'
-      ).length;
+      const safeScans = rawRecords.filter((r) => {
+        const val = String(r.prediction?.prediction || r.prediction || '').toLowerCase();
+        return val === 'safe';
+      }).length;
+      const riskyScans = rawRecords.filter((r) => {
+        const val = String(r.prediction?.prediction || r.prediction || '').toLowerCase();
+        return val === 'risky';
+      }).length;
       const totalScans = rawRecords.length;
 
       setDailyStats({ scansToday, safeScans, riskyScans, totalScans });
@@ -82,47 +94,53 @@ export default function Home() {
 
   const getResultColor = (result: string) => {
     switch (result) {
-      case 'safe':
+      case 'Safe for Consumption':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'risky':
+      case 'Not Recommended':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
     }
   };
 
-  // Health tips rotation
+  // Health tips state and rotation
   const [currentTip, setCurrentTip] = useState(0);
-  const healthTips = [
-    {
-      icon: Heart,
-      title: 'Heart Health Tip',
-      content:
-        'Choose foods low in saturated fats and trans fats. Opt for lean proteins like fish, poultry, and legumes.',
-      color: 'from-red-500 to-pink-500',
-    },
-    {
-      icon: Target,
-      title: 'Blood Sugar Management',
-      content:
-        'Pair carbohydrates with protein or healthy fats to help stabilize blood sugar levels throughout the day.',
-      color: 'from-blue-500 to-indigo-500',
-    },
-    {
-      icon: Shield,
-      title: 'Sodium Awareness',
-      content:
-        'Read nutrition labels carefully. Aim for less than 2,300mg of sodium per day to support healthy blood pressure.',
-      color: 'from-green-500 to-teal-500',
-    },
-    {
-      icon: Star,
-      title: 'Portion Control',
-      content:
-        'Use smaller plates and bowls to naturally reduce portion sizes while still feeling satisfied with your meals.',
-      color: 'from-yellow-500 to-orange-500',
-    },
+  const [healthTips, setHealthTips] = useState<Array<{icon: any, color: string, title: string, content: string}>>([]);
+  
+  // Icons and colors for tips
+  const tipStyles = [
+    { icon: Heart, color: 'from-red-500 to-pink-500', title: '' },
+    { icon: Target, color: 'from-blue-500 to-indigo-500', title: '' },
+    { icon: Shield, color: 'from-green-500 to-teal-500', title: '' },
+    { icon: Star, color: 'from-yellow-500 to-orange-500', title: '' },
+    { icon: Activity, color: 'from-purple-500 to-indigo-500', title: '' },
   ];
+
+  // Subscribe to user profile changes for real-time tips updates
+  useEffect(() => {
+    if (!user) {
+      setHealthTips([]);
+      return;
+    }
+
+    const unsubscribe = subscribeToUserProfile(user.uid, (profile: { tips?: Array<{ content: string }> } | undefined) => {
+      if (profile?.tips) {
+        const formattedTips = profile.tips.map((tip: { content: string }, index: number) => ({
+          ...tipStyles[index % tipStyles.length],
+          content: tip.content,
+        }));
+        setHealthTips(formattedTips);
+        // Reset current tip index if it's out of bounds
+        if (currentTip >= formattedTips.length) {
+          setCurrentTip(0);
+        }
+      } else {
+        setHealthTips([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const quickActions = [
     { icon: Camera, title: 'Scan Food', href: '/scanner', color: 'from-blue-500 to-cyan-500' },
@@ -139,16 +157,14 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="text-center space-y-4 py-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-            Welcome Back!
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Track your health journey with smart food analysis
-          </p>
-        </div>
+
+      <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
+          Welcome Back
+        </h1>
+        <p className="text-muted-foreground">
+          Track your health journey with smart food analysis
+        </p>
       </div>
 
       {/* Daily Summary */}
@@ -177,13 +193,6 @@ export default function Home() {
               <div className="text-2xl font-bold text-purple-600">{dailyStats.totalScans}</div>
               <div className="text-sm text-muted-foreground">Total Scans</div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progress to Daily Goal</span>
-              <span>{Math.round(dailyProgress)}%</span>
-            </div>
-            <Progress value={dailyProgress} className="h-2" />
           </div>
         </CardContent>
       </Card>
@@ -215,34 +224,38 @@ export default function Home() {
       </div>
 
       {/* Health Insights & Tips */}
-      <Card className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-blue-950/50 border-0 shadow-lg">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div
-              className={`p-3 rounded-xl bg-gradient-to-br ${healthTips[currentTip].color} shadow-lg flex-shrink-0`}
-            >
-              {React.createElement(healthTips[currentTip].icon, { className: 'w-6 h-6 text-white' })}
+      {healthTips.length > 0 && (
+        <Card className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-blue-950/50 border-0 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div
+                className={`p-3 rounded-xl bg-gradient-to-br ${healthTips[currentTip].color} shadow-lg flex-shrink-0`}
+              >
+                {React.createElement(healthTips[currentTip].icon, { className: 'w-6 h-6 text-white' })}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-2">{healthTips[currentTip].title}</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {healthTips[currentTip].content}
+                </p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-2">{healthTips[currentTip].title}</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {healthTips[currentTip].content}
-              </p>
-            </div>
-          </div>
-          <div className="flex justify-center mt-4 gap-2">
-            {healthTips.map((_, index) => (
-              <button
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentTip ? 'bg-blue-500 w-6' : 'bg-gray-300'
-                }`}
-                onClick={() => setCurrentTip(index)}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            {healthTips.length > 1 && (
+              <div className="flex justify-center mt-4 gap-2">
+                {healthTips.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentTip ? 'bg-blue-500 w-6' : 'bg-gray-300'
+                    }`}
+                    onClick={() => setCurrentTip(index)}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Activity */}
       {recentScans.length > 0 && (
@@ -250,30 +263,41 @@ export default function Home() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Activity className="w-5 h-5 text-primary" />
-              Recent Scan
+              Recent Scans
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentScans.map((scan, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors duration-200"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{scan.name}</p>
-                    <p className="text-sm text-muted-foreground">{scan.time}</p>
-                  </div>
-                  <Badge variant="secondary" className={`${getResultColor(scan.result)} border-0`}>
-                    {scan.result.toUpperCase()}
-                  </Badge>
+          <CardContent className="space-y-3 max-h-[300px] overflow-y-auto">
+            {recentScans.map((scan, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 bg-gradient-to-r from-white to-blue-50 dark:from-gray-700 dark:to-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground truncate">{scan.name}</p>
+                  <p className="text-xs text-muted-foreground">{scan.time}</p>
+                  {/* Optional truncated reasoning */}
+                  {scan.reasoning && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {scan.reasoning}
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
+
+                <Badge
+                  variant="secondary"
+                  className={`${getResultColor(scan.result)} border-0 ml-4 flex-shrink-0`}
+                >
+                  {scan.result.toUpperCase()}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+
+          <CardContent className="pt-0">
             <Link href="/history">
               <Button
                 variant="outline"
-                className="w-full mt-4 hover:bg-primary hover:text-primary-foreground transition-colors duration-300"
+                className="w-full mt-2 hover:bg-primary hover:text-primary-foreground transition-colors duration-300"
               >
                 See All Scans
                 <History className="w-4 h-4 ml-2" />
@@ -282,6 +306,7 @@ export default function Home() {
           </CardContent>
         </Card>
       )}
+
     </div>
   );
 }

@@ -31,6 +31,8 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
     console.log('Theme toggled:', !isDark ? 'dark' : 'light');
   };
 
+  
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-lg">
       <div className="container mx-auto px-4">

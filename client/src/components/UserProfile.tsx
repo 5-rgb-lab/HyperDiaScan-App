@@ -1,383 +1,237 @@
-import { useState } from 'react';
-import { updateUserProfile } from '@/lib/auth';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { User, Settings, LogOut, Shield, Calculator } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
-
-const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  age: z.number().min(18).max(120),
-  primaryCondition: z.enum(['diabetes', 'hypertension']),
-  emergencyContact: z.string().optional(),
-  height: z.number().min(100).max(250).optional(),
-  weight: z.number().min(30).max(300).optional()
-});
-
-type ProfileData = z.infer<typeof profileSchema>;
+import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion"
+import { userProfileSchema, UserProfile as UserProfileType } from "@shared/schema"
+import { getUserProfile } from "@/lib/auth"
+import { Form } from "@/components/ui/form"
+import BasicInfoSection from "./BasicInfoSection"
+import DemographicsSection from "./DemographicSection"
+import MedicalSection from "./MedicalSection"
+import BMISection from "./BMISection"
+import ProfileActions from "./ProfileActions"
+import { User, MapPin, HeartPulse, Activity, Pill, UtensilsCrossed } from "lucide-react"
+import TreatmentSection from "./TreatmentSection"
+import DailyIntakeSection from "./DailyIntakeSection"
 
 interface UserProfileProps {
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    photoURL?: string;
-    profile?: {
-      name: string;
-      email: string;
-      age?: number; 
-      primaryCondition: "diabetes" | "hypertension"; 
-      emergencyContact?: string;
-      height?: number;
-      weight?: number;
-    } | null; 
-  };
-  onSaveProfile: (data: ProfileData) => void;
-  onSignOut: () => void;
+  user: {
+    id: string
+    name: string
+    email: string
+    photoURL?: string
+    profile?: UserProfileType | null
+  }
+  onSaveProfile: (data: UserProfileType) => void
+  onSignOut: () => void
 }
 
 export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProfileProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const form = useForm<ProfileData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      age: user?.profile?.age || 30,
-      primaryCondition: (user?.profile?.primaryCondition === 'diabetes' || user?.profile?.primaryCondition === 'hypertension')
-        ? user.profile.primaryCondition
-        : 'diabetes',
-      emergencyContact: user?.profile?.emergencyContact || '',
-      height: user?.profile?.height || undefined,
-      weight: user?.profile?.weight || undefined
-    }
-  });
-
-  const onSubmit = async (data: ProfileData) => {
-    console.log('Saving profile:', data);
-    if (user?.id) {
-      try {
-        await updateUserProfile(user.id, data);
-      } catch (error) {
-        console.error('Error saving to Firestore:', error);
-      }
-    }
-    onSaveProfile(data);
-    setIsEditing(false);
-  };
-
-  const getConditionBadge = (condition: string) => {
-    const colors = {
-      diabetes: 'bg-blue-100 text-blue-800',
-      hypertension: 'bg-red-100 text-red-800'
-    };
-    return colors[condition as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getConditionText = (condition: string) => {
-    switch (condition) {
-      case 'diabetes': return 'Diabetes';
-      case 'hypertension': return 'Hypertension';
-      default: return condition;
-    }
-  };
-
-  const calculateBMI = (weight: number, height: number) => {
-    const heightInMeters = height / 100;
-    return (weight / (heightInMeters * heightInMeters)).toFixed(1);
-  };
-
-  const getBMICategory = (bmi: number) => {
-    if (bmi < 18.5) return { category: 'Underweight', color: 'text-blue-600' };
-    if (bmi < 25) return { category: 'Normal weight', color: 'text-green-600' };
-    if (bmi < 30) return { category: 'Overweight', color: 'text-yellow-600' };
-    return { category: 'Obese', color: 'text-red-600' };
-  };
-
-  if (!user) {
-    return (
-      <Card className="text-center p-8">
-        <CardContent>
-          <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Please sign in to view your profile</p>
-        </CardContent>
-      </Card>
-    );
+  // Provide a complete default profile shape so form fields are always controlled.
+  const emptyProfile: UserProfileType = {
+    name: user.profile?.name || '',
+    email: user.profile?.email || user.email || '',
+    age: user.profile?.age ?? 18,
+    primaryCondition: (user.profile?.primaryCondition as any) || 'diabetes',
+    primaryMedical: user.profile?.primaryMedical || {
+      diabetesType: 'None',
+      hypertensionType: 'None',
+    },
+    diabetesStatus: user.profile?.diabetesStatus || {
+      latestHbA1c: 0,
+      hypoglycemiaFrequency: 'Rare',
+    },
+    hypertensionStatus: user.profile?.hypertensionStatus || {
+      currentBP: { systolic: 120, diastolic: 80 },
+    },
+    treatmentManagement: user.profile?.treatmentManagement || {
+      diabetesManagement: {
+        insulinUse: false,
+        insulinType: 'Short-acting',
+        insulinTiming: 'Before Meals',
+      },
+      hypertensionManagement: {
+        antihypertensiveMeds: [],
+        medicationTiming: 'Morning',
+      },
+    },
+    nutrientTargets: user.profile?.nutrientTargets || {
+      dailyCalorieTarget: 2000,
+      dailyCarbLimit: 200,
+      dailySodiumLimit: 2300,
+      dailySatFatLimit: 20,
+    },
+    demographics: user.profile?.demographics || {
+      biologicalSex: 'Male',
+      heightCm: 170,
+      weightKg: 70,
+      activityLevel: 'Sedentary',
+    },
+    tips: user.profile?.tips || [],
   }
 
+  const form = useForm<UserProfileType>({
+    resolver: zodResolver(userProfileSchema),
+    // Always initialize with the full emptyProfile so all inputs are controlled
+    defaultValues: emptyProfile,
+  })
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user.id) return
+      const profileData = await getUserProfile(user.id)
+      // Merge fetched profile with emptyProfile to ensure all nested keys exist
+      if (profileData) {
+        const merged = {
+          ...emptyProfile,
+          ...profileData,
+          demographics: { ...emptyProfile.demographics, ...(profileData.demographics || {}) },
+          primaryMedical: { ...emptyProfile.primaryMedical, ...(profileData.primaryMedical || {}) },
+          diabetesStatus: { ...emptyProfile.diabetesStatus, ...(profileData.diabetesStatus || {}) },
+          hypertensionStatus: { ...emptyProfile.hypertensionStatus, ...(profileData.hypertensionStatus || {}) },
+          treatmentManagement: {
+            diabetesManagement: {
+              ...emptyProfile.treatmentManagement.diabetesManagement,
+              ...(profileData.treatmentManagement?.diabetesManagement || {}),
+            },
+            hypertensionManagement: {
+              ...emptyProfile.treatmentManagement.hypertensionManagement,
+              ...(profileData.treatmentManagement?.hypertensionManagement || {}),
+            },
+          },
+          nutrientTargets: { ...emptyProfile.nutrientTargets, ...(profileData.nutrientTargets || {}) },
+          tips: profileData.tips || emptyProfile.tips,
+        } as UserProfileType
+
+        form.reset(merged)
+      } else {
+        form.reset(emptyProfile)
+      }
+      setLoading(false)
+    }
+    fetchProfile()
+  }, [user.id, form])
+
+  const onSubmit = async (data: UserProfileType) => {
+    try {
+      await onSaveProfile(data)
+      setIsEditing(false)
+    } catch (error) {
+      console.error("Error saving profile:", error)
+      alert("Failed to save profile. Please try again.")
+    }
+  }
+
+  if (loading) return <p className="text-center text-muted-foreground">Loading profile...</p>
+
+  // Card classes for content (matches Home.tsx)
+  const cardClass =
+    "p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg border-0"
+
+  // Trigger gradient wrapper (for icon)
+  const triggerWrapper = (from: string, to: string) =>
+    `flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br ${from} ${to} text-white shadow-lg`
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Profile Information
-            </CardTitle>
-            {!isEditing && (
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditing(true)}
-                data-testid="button-edit-profile"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {!isEditing ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16">
-                  <AvatarImage src={user.photoURL} alt={user.name} />
-                  <AvatarFallback>
-                    {user.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-lg font-semibold" data-testid="text-user-name">
-                    {user.name}
-                  </h3>
-                  <p className="text-muted-foreground" data-testid="text-user-email">
-                    {user.email}
-                  </p>
-                </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Accordion type="multiple" defaultValue={["basic"]} className="space-y-4">
+          {/* Basic Info */}
+          <AccordionItem value="basic">
+            <AccordionTrigger className="flex items-center gap-3">
+              <div className={triggerWrapper("from-blue-500", "to-cyan-500 dark:from-blue-700 dark:to-cyan-700")}>
+                <User className="w-5 h-5" />
               </div>
+              <span className="font-semibold text-foreground">Basic Information</span>
+            </AccordionTrigger>
+            <AccordionContent className={cardClass}>
+              <BasicInfoSection form={form} isEditing={isEditing} />
+            </AccordionContent>
+          </AccordionItem>
 
-              {user.profile && (
-                <>
-                  <Separator />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Age</label>
-                      <p className="text-sm" data-testid="text-user-age">
-                        {user.profile.age} years old
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Primary Condition</label>
-                      <div className="mt-1">
-                        <Badge className={getConditionBadge(user.profile.primaryCondition)}>
-                          {getConditionText(user.profile.primaryCondition)}
-                        </Badge>
-                      </div>
-                    </div>
-                    {user.profile.emergencyContact && (
-                      <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-muted-foreground">Emergency Contact</label>
-                        <p className="text-sm" data-testid="text-emergency-contact">
-                          {user.profile.emergencyContact}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* BMI Calculator Display */}
-                  {user.profile.height && user.profile.weight && (
-                    <>
-                      <Separator />
-                      <Card className="bg-gradient-to-r from-blue-50 to-teal-50 border-blue-200">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Calculator className="w-6 h-6 text-blue-600" />
-                            <div>
-                              <h4 className="font-semibold text-blue-900">BMI Calculator</h4>
-                              <div className="mt-2 space-y-1">
-                                <p className="text-sm text-blue-800">
-                                  Height: {user.profile.height} cm | Weight: {user.profile.weight} kg
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg font-bold text-blue-900">
-                                    BMI: {calculateBMI(user.profile.weight, user.profile.height)}
-                                  </span>
-                                  <span className={`text-sm font-medium ${getBMICategory(parseFloat(calculateBMI(user.profile.weight, user.profile.height))).color}`}>
-                                    ({getBMICategory(parseFloat(calculateBMI(user.profile.weight, user.profile.height))).category})
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} data-testid="input-profile-name" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+          {/* Demographics */}
+          <AccordionItem value="demographics">
+            <AccordionTrigger className="flex items-center gap-3">
+              <div className={triggerWrapper("from-emerald-500", "to-lime-500 dark:from-emerald-700 dark:to-lime-700")}>
+                <MapPin className="w-5 h-5" />
+              </div>
+              <span className="font-semibold text-foreground">Demographics</span>
+            </AccordionTrigger>
+            <AccordionContent className={cardClass}>
+              <DemographicsSection form={form} isEditing={isEditing} />
+            </AccordionContent>
+          </AccordionItem>
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" data-testid="input-profile-email" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+          {/* Medical Info */}
+          <AccordionItem value="medical">
+            <AccordionTrigger className="flex items-center gap-3">
+              <div className={triggerWrapper("from-rose-500", "to-pink-500 dark:from-rose-700 dark:to-pink-700")}>
+                <HeartPulse className="w-5 h-5" />
+              </div>
+              <span className="font-semibold text-foreground">Medical Information</span>
+            </AccordionTrigger>
+            <AccordionContent className={cardClass}>
+              <MedicalSection form={form} isEditing={isEditing} />
+            </AccordionContent>
+          </AccordionItem>
 
-                  <FormField
-                    control={form.control}
-                    name="age"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Age</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            data-testid="input-profile-age"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+          {/* Treatment & Medications */}
+          <AccordionItem value="treatment">
+            <AccordionTrigger className="flex items-center gap-3">
+              <div className={triggerWrapper("from-amber-500", "to-orange-500 dark:from-amber-700 dark:to-orange-700")}>
+                <Pill className="w-5 h-5" />
+              </div>
+              <span className="font-semibold text-foreground">Treatment & Medications</span>
+            </AccordionTrigger>
+            <AccordionContent className={cardClass}>
+              <TreatmentSection form={form} isEditing={isEditing} />
+            </AccordionContent>
+          </AccordionItem>
 
-                  <FormField
-                    control={form.control}
-                    name="primaryCondition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Condition</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-primary-condition">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="diabetes">Diabetes</SelectItem>
-                            <SelectItem value="hypertension">Hypertension</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+          {/* Daily Intake */}
+          <AccordionItem value="daily-intake">
+            <AccordionTrigger className="flex items-center gap-3">
+              <div className={triggerWrapper("from-teal-500", "to-emerald-500 dark:from-teal-700 dark:to-emerald-700")}>
+                <UtensilsCrossed className="w-5 h-5" />
+              </div>
+              <span className="font-semibold text-foreground">Daily Intake Targets</span>
+            </AccordionTrigger>
+            <AccordionContent className={cardClass}>
+              <DailyIntakeSection form={form} isEditing={isEditing} />
+            </AccordionContent>
+          </AccordionItem>
 
-                  <FormField
-                    control={form.control}
-                    name="height"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Height (cm)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            placeholder="175"
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                            data-testid="input-height"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+          {/* BMI */}
+          <AccordionItem value="bmi">
+            <AccordionTrigger className="flex items-center gap-3">
+              <div className={triggerWrapper("from-purple-500", "to-indigo-500 dark:from-purple-700 dark:to-indigo-700")}>
+                <Activity className="w-5 h-5" />
+              </div>
+              <span className="font-semibold text-foreground">Body Mass Index</span>
+            </AccordionTrigger>
+            <AccordionContent className={cardClass}>
+              <BMISection form={form} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
-                  <FormField
-                    control={form.control}
-                    name="weight"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Weight (kg)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            placeholder="70"
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                            data-testid="input-weight"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="emergencyContact"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Emergency Contact (Optional)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder="Phone number or email"
-                            data-testid="input-emergency-contact"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button type="submit" data-testid="button-save-profile">
-                    Save Changes
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsEditing(false)}
-                    data-testid="button-cancel-edit"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Account Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button 
-            variant="destructive" 
-            onClick={onSignOut}
-            data-testid="button-sign-out"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        <ProfileActions
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          form={form}
+          onSubmit={onSubmit}
+          onSignOut={onSignOut}
+          originalProfile={user.profile}
+        />
+      </form>
+    </Form>
+  )
 }

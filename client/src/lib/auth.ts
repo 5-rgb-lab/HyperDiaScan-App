@@ -4,12 +4,16 @@ import {
   signOut as firebaseSignOut, 
   onAuthStateChanged,
   User,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { FirebaseUser, UserProfile } from '@shared/schema';
+import { UserProfile, userProfileSchema } from '@shared/schema';
 
+// ----------------------------
+// Sign in / Sign up
+// ----------------------------
 export const signInWithEmail = async (email: string, password: string) => {
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
@@ -20,19 +24,23 @@ export const signInWithEmail = async (email: string, password: string) => {
   }
 };
 
-export const signUpWithEmail = async (email: string, password: string, name: string) => {
+export const signUpWithEmail = async (
+  email: string,
+  password: string,
+  name: string,
+  profileData?: Partial<UserProfile>
+) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const user = result.user;
-    
-    // Update the user's display name
-    await updateProfile(user, {
-      displayName: name
-    });
-    
-    // Create user profile in Firestore
-    await createUserProfile(user);
-    
+
+    await updateProfile(user, { displayName: name });
+
+    // ✅ Create only minimal profile
+    await createUserProfile(user, profileData);
+
+    await firebaseSignOut(auth);
+
     return user;
   } catch (error) {
     console.error('Error signing up with email:', error);
@@ -40,44 +48,138 @@ export const signUpWithEmail = async (email: string, password: string, name: str
   }
 };
 
-export const signOut = async () => {
-  try {
-    await firebaseSignOut(auth);
-  } catch (error) {
-    console.error('Error signing out:', error);
-    throw error;
-  }
-};
-
-export const createUserProfile = async (user: User) => {
+// ----------------------------
+// Create / Update / Fetch User Profile
+// ----------------------------
+export const createUserProfile = async (user: User, profileData?: Partial<UserProfile>) => {
   if (!user) return;
 
   const userRef = doc(db, 'users', user.uid);
   const userSnap = await getDoc(userRef);
-  
+
   if (!userSnap.exists()) {
-    const defaultProfile: UserProfile = {
-      name: user.displayName || 'Unknown User',
+    // Only save the fields that are collected during registration
+    // Create minimal profile with only registration data and required fields
+    const baseProfile: Partial<UserProfile> = {
+      name: user.displayName || profileData?.name || '',
       email: user.email || '',
-      primaryCondition: 'diabetes',
+      age: profileData?.age || 18,
+      primaryCondition: profileData?.primaryCondition || 'diabetes',
+      demographics: {
+        biologicalSex: profileData?.demographics?.biologicalSex || 'Male',
+        heightCm: profileData?.demographics?.heightCm || 170,
+        weightKg: profileData?.demographics?.weightKg || 70,
+        activityLevel: 'Sedentary'
+      },
+      tips: [
+        {
+          content:
+            'Choose foods low in saturated fats and trans fats. Opt for lean proteins like fish, poultry, and legumes.',
+        },
+        {
+          content:
+            'Pair carbohydrates with protein or healthy fats to help stabilize blood sugar levels throughout the day.',
+        },
+        {
+          content:
+            'Read nutrition labels carefully. Aim for less than 2,300mg of sodium per day to support healthy blood pressure.',
+        },
+        {
+          content:
+            'Use smaller plates and bowls to naturally reduce portion sizes while still feeling satisfied with your meals.',
+        },
+        {
+          content:
+            'Drink at least 8 glasses of water daily. Staying hydrated helps maintain energy and control appetite.',
+        },
+      ],
     };
-    
+
+    // Save the minimal profile and mark it as incomplete
     await setDoc(userRef, {
-      ...defaultProfile,
+      ...baseProfile,
+      uid: user.uid,
+      isProfileComplete: false, // Add flag to track profile completion status
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     });
   }
 };
 
-export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
+export const updateUserProfile = async (userId: string, profile: UserProfile) => {
   const userRef = doc(db, 'users', userId);
-  await setDoc(userRef, {
-    ...profile,
-    updatedAt: new Date().toISOString(),
-  }, { merge: true });
-};
+  const userSnap = await getDoc(userRef);
+  
+  const defaultProfile: UserProfile = {
+    name: '',
+    email: '',
+    age: 18,
+    primaryCondition: 'diabetes',
+    primaryMedical: {
+      diabetesType: 'None',
+      hypertensionType: 'None'
+    },
+    diabetesStatus: {
+      latestHbA1c: 0,
+      hypoglycemiaFrequency: 'Rare'
+    },
+    hypertensionStatus: {
+      currentBP: {
+        systolic: 120,
+        diastolic: 80
+      }
+    },
+    treatmentManagement: {
+      diabetesManagement: {
+        insulinUse: false,
+        insulinType: 'Short-acting',
+        insulinTiming: 'Before Meals'
+      },
+      hypertensionManagement: {
+        antihypertensiveMeds: [],
+        medicationTiming: 'Morning'
+      }
+    },
+    nutrientTargets: {
+      dailyCalorieTarget: 2000,
+      dailyCarbLimit: 200,
+      dailySodiumLimit: 2300,
+      dailySatFatLimit: 20
+    },
+    demographics: {
+      biologicalSex: 'Male',
+      heightCm: 170,
+      weightKg: 70,
+      activityLevel: 'Sedentary'
+    }
+  };
 
+  // Get existing data or use default profile
+  const existingData = userSnap.exists() ? userSnap.data() as UserProfile : defaultProfile;
+  
+  // Merge the new profile data with existing data
+  const updatedProfile = {
+    ...existingData,
+    ...profile,
+    updatedAt: new Date().toISOString()
+  };
+
+  // Validate the profile against the schema
+  try {
+    const validatedProfile = userProfileSchema.parse(updatedProfile);
+    
+    // Save the validated profile
+    await setDoc(userRef, validatedProfile, { merge: true });
+    
+    // Fetch and return the updated profile
+    const updatedSnap = await getDoc(userRef);
+    return updatedSnap.exists() ? updatedSnap.data() as UserProfile : null;
+  } catch (error) {
+    console.error('Profile validation failed:', error);
+    throw error;
+  }
+};
+ 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   const userRef = doc(db, 'users', userId);
   const userSnap = await getDoc(userRef);
@@ -90,4 +192,22 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 
 export const onAuthChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw error;
+  }
+};
+
+export const signOut = async () => {
+  try {
+    await firebaseSignOut(auth);
+  } catch (error) {
+    console.error('Error signing out:', error);
+    throw error;
+  }
 };
