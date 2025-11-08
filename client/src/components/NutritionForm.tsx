@@ -42,7 +42,14 @@ export default function NutritionForm({
       fat: 0,
       sodium: 0,
       fiber: 0,
-      sugar: 0,
+      totalSugars: 0,
+      addedSugars: 0,
+      saturatedFat: 0,
+      transFat: 0,
+      potassium: 0,
+      cholesterol: 0,
+      servingSize: "",
+      servingsPerContainer: 0,
       condition: userCondition,
     },
   });
@@ -58,7 +65,14 @@ export default function NutritionForm({
         fat: Number(initialData.fat) || 0,
         sodium: Number(initialData.sodium) || 0,
         fiber: Number(initialData.fiber) || 0,
-        sugar: Number(initialData.sugar) || 0,
+        totalSugars: Number((initialData as any).totalSugars) || 0,
+        addedSugars: Number((initialData as any).addedSugars) || 0,
+        saturatedFat: Number((initialData as any).saturatedFat) || 0,
+        transFat: Number((initialData as any).transFat) || 0,
+        potassium: Number((initialData as any).potassium) || 0,
+        cholesterol: Number((initialData as any).cholesterol) || 0,
+        servingSize: (initialData as any).servingSize || "",
+        servingsPerContainer: Number((initialData as any).servingsPerContainer) || 0,
         condition: userCondition,
       };
       form.reset(formData); // Use reset instead of setting values individually
@@ -76,7 +90,14 @@ export default function NutritionForm({
         fat: Number(data.fat),
         sodium: Number(data.sodium),
         fiber: Number(data.fiber),
-        sugar: Number(data.sugar),
+        totalSugars: Number((data as any).totalSugars),
+        addedSugars: Number((data as any).addedSugars || 0),
+        saturatedFat: Number((data as any).saturatedFat || 0),
+        transFat: Number((data as any).transFat || 0),
+        potassium: Number((data as any).potassium || 0),
+        cholesterol: Number((data as any).cholesterol || 0),
+        servingSize: (data as any).servingSize || "",
+        servingsPerContainer: Number((data as any).servingsPerContainer || 0),
         condition: data.condition || userCondition,
       };
 
@@ -141,11 +162,18 @@ export default function NutritionForm({
                 {[
                   { name: "calories", label: "Calories" },
                   { name: "carbohydrates", label: "Carbohydrates (g)" },
+                    { name: "totalSugars", label: "Total Sugars (g)" },
+                    { name: "addedSugars", label: "Added Sugars (g)" },
                   { name: "protein", label: "Protein (g)" },
                   { name: "fat", label: "Total Fat (g)" },
+                    { name: "saturatedFat", label: "Saturated Fat (g)" },
+                    { name: "transFat", label: "Trans Fat (g)" },
                   { name: "sodium", label: "Sodium (mg)" },
+                    { name: "potassium", label: "Potassium (mg)" },
+                    { name: "cholesterol", label: "Cholesterol (mg)" },
                   { name: "fiber", label: "Dietary Fiber (g)" },
-                  { name: "sugar", label: "Sugar (g)" },
+                    { name: "servingSize", label: "Serving Size (text)" },
+                    { name: "servingsPerContainer", label: "Servings / Container" },
                 ].map((fieldData) => (
                   <FormField<AnalyzeFoodRequest>
                     key={fieldData.name}
@@ -155,17 +183,23 @@ export default function NutritionForm({
                       <FormItem>
                         <FormLabel>{fieldData.label}</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            step="any"
-                            min="0"
-                            {...field}
-                            value={typeof field.value === 'number' ? (field.value === 0 ? "" : field.value) : ""}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              field.onChange(value === "" ? 0 : Math.max(0, parseFloat(value) || 0));
-                            }}
-                          />
+                            {/* Serving size is textual; other fields are numeric */}
+                            {fieldData.name === 'servingSize' ? (
+                              // cast to any to avoid overly-wide react-hook-form union types
+                              <Input {...(field as any)} placeholder="e.g., 1 cup (240g)" />
+                            ) : (
+                              <Input
+                                type="number"
+                                step="any"
+                                min="0"
+                                {...(field as any)}
+                                value={typeof field.value === 'number' ? (field.value === 0 ? "" : field.value) : ""}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value === "" ? 0 : Math.max(0, parseFloat(value) || 0));
+                                }}
+                              />
+                            )}
 
                         </FormControl>
                       </FormItem>

@@ -13,11 +13,8 @@ import { Form } from "@/components/ui/form"
 import BasicInfoSection from "./BasicInfoSection"
 import DemographicsSection from "./DemographicSection"
 import MedicalSection from "./MedicalSection"
-import BMISection from "./BMISection"
 import ProfileActions from "./ProfileActions"
-import { User, MapPin, HeartPulse, Activity, Pill, UtensilsCrossed } from "lucide-react"
-import TreatmentSection from "./TreatmentSection"
-import DailyIntakeSection from "./DailyIntakeSection"
+import { User, MapPin, HeartPulse } from "lucide-react"
 
 interface UserProfileProps {
   user: {
@@ -39,43 +36,21 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
   const emptyProfile: UserProfileType = {
     name: user.profile?.name || '',
     email: user.profile?.email || user.email || '',
-    age: user.profile?.age ?? 18,
     primaryCondition: (user.profile?.primaryCondition as any) || 'diabetes',
-    primaryMedical: user.profile?.primaryMedical || {
-      diabetesType: 'None',
-      hypertensionType: 'None',
-    },
-    diabetesStatus: user.profile?.diabetesStatus || {
-      latestHbA1c: 0,
-      hypoglycemiaFrequency: 'Rare',
-    },
-    hypertensionStatus: user.profile?.hypertensionStatus || {
-      currentBP: { systolic: 120, diastolic: 80 },
-    },
+    otherConditions: user.profile?.otherConditions || { kidneyDisease: false, heartDisease: false },
+    diabetesStatus: user.profile?.diabetesStatus || { bloodSugar: 0 },
+    hypertensionStatus: user.profile?.hypertensionStatus || { bloodPressure: { systolic: 120, diastolic: 80 } },
     treatmentManagement: user.profile?.treatmentManagement || {
-      diabetesManagement: {
-        insulinUse: false,
-        insulinType: 'Short-acting',
-        insulinTiming: 'Before Meals',
-      },
-      hypertensionManagement: {
-        antihypertensiveMeds: [],
-        medicationTiming: 'Morning',
-      },
-    },
-    nutrientTargets: user.profile?.nutrientTargets || {
-      dailyCalorieTarget: 2000,
-      dailyCarbLimit: 200,
-      dailySodiumLimit: 2300,
-      dailySatFatLimit: 20,
+      diabetesMedication: { medications: [] },
+      hypertensionMedication: { medications: [] },
     },
     demographics: user.profile?.demographics || {
       biologicalSex: 'Male',
+      age: 18,
       heightCm: 170,
       weightKg: 70,
       activityLevel: 'Sedentary',
     },
-    tips: user.profile?.tips || [],
   }
 
   const form = useForm<UserProfileType>({
@@ -94,21 +69,13 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
           ...emptyProfile,
           ...profileData,
           demographics: { ...emptyProfile.demographics, ...(profileData.demographics || {}) },
-          primaryMedical: { ...emptyProfile.primaryMedical, ...(profileData.primaryMedical || {}) },
+          otherConditions: { ...emptyProfile.otherConditions, ...(profileData.otherConditions || {}) },
           diabetesStatus: { ...emptyProfile.diabetesStatus, ...(profileData.diabetesStatus || {}) },
           hypertensionStatus: { ...emptyProfile.hypertensionStatus, ...(profileData.hypertensionStatus || {}) },
           treatmentManagement: {
-            diabetesManagement: {
-              ...emptyProfile.treatmentManagement.diabetesManagement,
-              ...(profileData.treatmentManagement?.diabetesManagement || {}),
-            },
-            hypertensionManagement: {
-              ...emptyProfile.treatmentManagement.hypertensionManagement,
-              ...(profileData.treatmentManagement?.hypertensionManagement || {}),
-            },
+            diabetesMedication: { ...emptyProfile.treatmentManagement.diabetesMedication, ...(profileData.treatmentManagement?.diabetesMedication || {}) },
+            hypertensionMedication: { ...emptyProfile.treatmentManagement.hypertensionMedication, ...(profileData.treatmentManagement?.hypertensionMedication || {}) },
           },
-          nutrientTargets: { ...emptyProfile.nutrientTargets, ...(profileData.nutrientTargets || {}) },
-          tips: profileData.tips || emptyProfile.tips,
         } as UserProfileType
 
         form.reset(merged)
@@ -183,44 +150,7 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
             </AccordionContent>
           </AccordionItem>
 
-          {/* Treatment & Medications */}
-          <AccordionItem value="treatment">
-            <AccordionTrigger className="flex items-center gap-3">
-              <div className={triggerWrapper("from-amber-500", "to-orange-500 dark:from-amber-700 dark:to-orange-700")}>
-                <Pill className="w-5 h-5" />
-              </div>
-              <span className="font-semibold text-foreground">Treatment & Medications</span>
-            </AccordionTrigger>
-            <AccordionContent className={cardClass}>
-              <TreatmentSection form={form} isEditing={isEditing} />
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Daily Intake */}
-          <AccordionItem value="daily-intake">
-            <AccordionTrigger className="flex items-center gap-3">
-              <div className={triggerWrapper("from-teal-500", "to-emerald-500 dark:from-teal-700 dark:to-emerald-700")}>
-                <UtensilsCrossed className="w-5 h-5" />
-              </div>
-              <span className="font-semibold text-foreground">Daily Intake Targets</span>
-            </AccordionTrigger>
-            <AccordionContent className={cardClass}>
-              <DailyIntakeSection form={form} isEditing={isEditing} />
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* BMI */}
-          <AccordionItem value="bmi">
-            <AccordionTrigger className="flex items-center gap-3">
-              <div className={triggerWrapper("from-purple-500", "to-indigo-500 dark:from-purple-700 dark:to-indigo-700")}>
-                <Activity className="w-5 h-5" />
-              </div>
-              <span className="font-semibold text-foreground">Body Mass Index</span>
-            </AccordionTrigger>
-            <AccordionContent className={cardClass}>
-              <BMISection form={form} />
-            </AccordionContent>
-          </AccordionItem>
+          {/* (Treatment moved into Medical Information; daily intake removed) */}
         </Accordion>
 
         <ProfileActions

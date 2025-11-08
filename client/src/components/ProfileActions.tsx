@@ -25,8 +25,8 @@ export default function ProfileActions({
             type="button"
             variant="outline"
             onClick={() => {
-              // Reset to the form's default values (emptyProfile) to avoid uncontrolled inputs
-              form.reset()
+              // Reset to the original profile values
+              form.reset(originalProfile)
               setIsEditing(false)
             }}
           >

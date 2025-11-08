@@ -1,13 +1,26 @@
 import { PenLine } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { NutritionData } from '@shared/schema';
-import NutritionForm from './NutritionForm';
 
 interface CameraScannerProps {
   onScanComplete: (data: NutritionData) => void;
 }
 
 export default function CameraScanner({ onScanComplete }: CameraScannerProps) {
+  const handleStartEmpty = () => {
+    onScanComplete({
+      calories: 0,
+      carbohydrates: 0,
+      protein: 0,
+      fat: 0,
+      sodium: 0,
+      fiber: 0,
+      totalSugars: 0,
+      servingSize: "",
+    });
+  };
+
   return (
     <Card className="p-6 space-y-4">
       <div className="flex items-center gap-2">
@@ -15,20 +28,14 @@ export default function CameraScanner({ onScanComplete }: CameraScannerProps) {
         <h3 className="text-lg font-semibold">Manual Nutrition Input</h3>
       </div>
       <p className="text-muted-foreground text-sm">
-        Enter the nutritional values manually to analyze your food item.
+        Enter nutritional values manually to analyze your food item.
       </p>
-
-      <NutritionForm
-        initialData={{
-          calories: 0,
-          carbohydrates: 0,
-          protein: 0,
-          fat: 0,
-          sodium: 0,
-          fiber: 0,
-        }}
-        onAnalyze={(data) => onScanComplete(data)}
-      />
+      <Button 
+        onClick={handleStartEmpty}
+        className="w-full"
+      >
+        Start Manual Entry
+      </Button>
     </Card>
   );
 }

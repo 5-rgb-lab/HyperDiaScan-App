@@ -58,48 +58,44 @@ export const createUserProfile = async (user: User, profileData?: Partial<UserPr
   const userSnap = await getDoc(userRef);
 
   if (!userSnap.exists()) {
-    // Only save the fields that are collected during registration
-    // Create minimal profile with only registration data and required fields
-    const baseProfile: Partial<UserProfile> = {
+    // Create a full default profile matching the editable profile shape
+    const defaultTips = [
+      { content: 'Choose lower-sodium options when possible.' },
+      { content: 'Prefer whole foods and add vegetables to meals.' },
+      { content: 'Watch portion sizes and consider splitting large portions.' },
+      { content: 'Limit added sugars and sugary drinks.' },
+      { content: 'Balance carbs with protein and fiber to slow absorption.' },
+    ];
+
+    const fullProfile: UserProfile = {
       name: user.displayName || profileData?.name || '',
       email: user.email || '',
-      age: profileData?.age || 18,
       primaryCondition: profileData?.primaryCondition || 'diabetes',
+      otherConditions: {
+        kidneyDisease: profileData?.otherConditions?.kidneyDisease || false,
+        heartDisease: profileData?.otherConditions?.heartDisease || false,
+      },
+      diabetesStatus: profileData?.diabetesStatus || { bloodSugar: 0 },
+      hypertensionStatus: profileData?.hypertensionStatus || { bloodPressure: { systolic: 120, diastolic: 80 } },
+      treatmentManagement: {
+        diabetesMedication: { medications: profileData?.treatmentManagement?.diabetesMedication?.medications || [] },
+        hypertensionMedication: { medications: profileData?.treatmentManagement?.hypertensionMedication?.medications || [] }
+      },
       demographics: {
         biologicalSex: profileData?.demographics?.biologicalSex || 'Male',
+        age: profileData?.demographics?.age || 18,
         heightCm: profileData?.demographics?.heightCm || 170,
         weightKg: profileData?.demographics?.weightKg || 70,
-        activityLevel: 'Sedentary'
-      },
-      tips: [
-        {
-          content:
-            'Choose foods low in saturated fats and trans fats. Opt for lean proteins like fish, poultry, and legumes.',
-        },
-        {
-          content:
-            'Pair carbohydrates with protein or healthy fats to help stabilize blood sugar levels throughout the day.',
-        },
-        {
-          content:
-            'Read nutrition labels carefully. Aim for less than 2,300mg of sodium per day to support healthy blood pressure.',
-        },
-        {
-          content:
-            'Use smaller plates and bowls to naturally reduce portion sizes while still feeling satisfied with your meals.',
-        },
-        {
-          content:
-            'Drink at least 8 glasses of water daily. Staying hydrated helps maintain energy and control appetite.',
-        },
-      ],
+        activityLevel: profileData?.demographics?.activityLevel || 'Sedentary'
+      }
     };
 
-    // Save the minimal profile and mark it as incomplete
+    // Save the full profile and add default tips. Mark profile as incomplete so user can edit.
     await setDoc(userRef, {
-      ...baseProfile,
+      ...fullProfile,
+      tips: defaultTips,
       uid: user.uid,
-      isProfileComplete: false, // Add flag to track profile completion status
+      isProfileComplete: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -113,45 +109,15 @@ export const updateUserProfile = async (userId: string, profile: UserProfile) =>
   const defaultProfile: UserProfile = {
     name: '',
     email: '',
-    age: 18,
     primaryCondition: 'diabetes',
-    primaryMedical: {
-      diabetesType: 'None',
-      hypertensionType: 'None'
-    },
-    diabetesStatus: {
-      latestHbA1c: 0,
-      hypoglycemiaFrequency: 'Rare'
-    },
-    hypertensionStatus: {
-      currentBP: {
-        systolic: 120,
-        diastolic: 80
-      }
-    },
+    otherConditions: { kidneyDisease: false, heartDisease: false },
+    diabetesStatus: { bloodSugar: 0 },
+    hypertensionStatus: { bloodPressure: { systolic: 120, diastolic: 80 } },
     treatmentManagement: {
-      diabetesManagement: {
-        insulinUse: false,
-        insulinType: 'Short-acting',
-        insulinTiming: 'Before Meals'
-      },
-      hypertensionManagement: {
-        antihypertensiveMeds: [],
-        medicationTiming: 'Morning'
-      }
+      diabetesMedication: { medications: [] },
+      hypertensionMedication: { medications: [] }
     },
-    nutrientTargets: {
-      dailyCalorieTarget: 2000,
-      dailyCarbLimit: 200,
-      dailySodiumLimit: 2300,
-      dailySatFatLimit: 20
-    },
-    demographics: {
-      biologicalSex: 'Male',
-      heightCm: 170,
-      weightKg: 70,
-      activityLevel: 'Sedentary'
-    }
+    demographics: { biologicalSex: 'Male', age: 18, heightCm: 170, weightKg: 70, activityLevel: 'Sedentary' }
   };
 
   // Get existing data or use default profile

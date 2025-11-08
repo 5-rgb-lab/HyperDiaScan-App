@@ -10,7 +10,17 @@ export const nutritionDataSchema = z.object({
   fat: z.number().min(0).max(200),
   sodium: z.number().min(0).max(10000),
   fiber: z.number().min(0).max(100),
-  sugar: z.number().min(0).max(500),
+  // sugars: provide both total and added sugars (grams)
+  totalSugars: z.number().min(0).max(500),
+  addedSugars: z.number().min(0).max(500).optional(),
+  // additional nutrients from nutrition facts
+  saturatedFat: z.number().min(0).max(200).optional(),
+  transFat: z.number().min(0).max(50).optional(),
+  potassium: z.number().min(0).max(20000).optional(), // mg
+  cholesterol: z.number().min(0).max(2000).optional(), // mg
+  // serving info
+  servingSize: z.string().optional(),
+  servingsPerContainer: z.number().min(0).optional(),
 });
 
 export const healthConditionSchema = z.enum(["diabetes", "hypertension", "both"]);
@@ -31,21 +41,20 @@ export const healthPredictionSchema = z.object({
 // 👤 Category Schemas (Exported Individually)
 // ----------------------------------------------------
 
-// 1️⃣ Primary Medical Conditions
-export const primaryMedicalSchema = z.object({
-  diabetesType: z.enum(["Type 1", "Type 2", "Gestational", "Pre-diabetes", "None"]),
-  hypertensionType: z.enum(["Primary", "Secondary", "None"]),
+// 1️⃣ Other Conditions
+export const otherConditionsSchema = z.object({
+  kidneyDisease: z.boolean(),
+  heartDisease: z.boolean(),
 });
 
 // 2️⃣ Diabetes-Specific Status
 export const diabetesStatusSchema = z.object({
-  latestHbA1c: z.number().min(0).max(200),
-  hypoglycemiaFrequency: z.enum(["Rare", "Occasional", "Frequent"]),
+  bloodSugar: z.number().min(0).max(1000),
 });
 
 // 3️⃣ Hypertension-Specific Status
 export const hypertensionStatusSchema = z.object({
-  currentBP: z.object({
+  bloodPressure: z.object({
     systolic: z.number().min(50).max(300),
     diastolic: z.number().min(30).max(200),
   }),
@@ -53,28 +62,39 @@ export const hypertensionStatusSchema = z.object({
 
 // 4️⃣ Treatment & Medication Management
 export const treatmentManagementSchema = z.object({
-  diabetesManagement: z.object({
-    insulinUse: z.boolean(),
-    insulinType: z.enum(["Short-acting", "Long-acting", "Both"]),
-    insulinTiming: z.enum(["Before Meals", "After Meals", "Morning", "Evening", "Both"]),
+  diabetesMedication: z.object({
+    medications: z.array(z.enum([
+      "None",
+      "Metformin",
+      "Sulfonylureas",
+      "DPP-4 inhibitors",
+      "SGLT2 inhibitors",
+      "GLP-1 receptor agonists",
+      "Insulin - Short-acting",
+      "Insulin - Long-acting",
+      "Insulin - Both",
+      "Other"
+    ])).optional(),
   }),
-  hypertensionManagement: z.object({
-    antihypertensiveMeds: z.array(z.string()),
-    medicationTiming: z.enum(["Morning", "Evening", "Both"]),
+  hypertensionMedication: z.object({
+    medications: z.array(z.enum([
+      "None",
+      "ACE inhibitors",
+      "ARBs",
+      "Beta blockers",
+      "Calcium channel blockers",
+      "Diuretics",
+      "Alpha blockers",
+      "Vasodilators",
+      "Other"
+    ])).optional(),
   }),
 });
 
-// 5️⃣ Personalized Nutrient & Physiological Targets
-export const nutrientTargetsSchema = z.object({
-  dailyCalorieTarget: z.number().min(100).max(10000),
-  dailyCarbLimit: z.number().min(0).max(1000),
-  dailySodiumLimit: z.number().min(0).max(10000),
-  dailySatFatLimit: z.number().min(0).max(500),
-});
-
-// 6️⃣ Demographics & Physiology
+// 5️⃣ Demographics & Basic Information
 export const demographicsSchema = z.object({
   biologicalSex: z.enum(["Male", "Female", "Other"]),
+  age: z.number().min(18).max(120),
   heightCm: z.number().min(50).max(250),
   weightKg: z.number().min(20).max(300),
   activityLevel: z.enum(["Sedentary", "Lightly Active", "Moderate", "Very Active"]),
@@ -87,23 +107,12 @@ export const demographicsSchema = z.object({
 export const userProfileSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  age: z.number().min(18).max(120),
   primaryCondition: healthConditionSchema,
-  primaryMedical: primaryMedicalSchema,
-  diabetesStatus: diabetesStatusSchema,
-  hypertensionStatus: hypertensionStatusSchema,
+  otherConditions: otherConditionsSchema,
+  diabetesStatus: diabetesStatusSchema.optional(),
+  hypertensionStatus: hypertensionStatusSchema.optional(),
   treatmentManagement: treatmentManagementSchema,
-  nutrientTargets: nutrientTargetsSchema,
   demographics: demographicsSchema,
-  tips: z
-  .array(
-    z.object({
-      content: z.string(),
-    })
-  )
-  .max(5)
-  .optional(),
-
 });
 
 // ----------------------------------------------------
@@ -136,11 +145,10 @@ export type NutritionData = z.infer<typeof nutritionDataSchema>;
 export type HealthCondition = z.infer<typeof healthConditionSchema>;
 export type HealthPrediction = z.infer<typeof healthPredictionSchema>;
 
-export type PrimaryMedical = z.infer<typeof primaryMedicalSchema>;
+export type OtherConditions = z.infer<typeof otherConditionsSchema>;
 export type DiabetesStatus = z.infer<typeof diabetesStatusSchema>;
 export type HypertensionStatus = z.infer<typeof hypertensionStatusSchema>;
 export type TreatmentManagement = z.infer<typeof treatmentManagementSchema>;
-export type NutrientTargets = z.infer<typeof nutrientTargetsSchema>;
 export type Demographics = z.infer<typeof demographicsSchema>;
 
 export type UserProfile = z.infer<typeof userProfileSchema>;

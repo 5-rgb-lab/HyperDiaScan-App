@@ -66,58 +66,9 @@ export default function BasicInfoSection({ form, isEditing }: { form: any; isEdi
           )}
         />
 
-        {/* Age */}
-        <FormField
-          control={form.control}
-          name="age"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                <Calendar className="w-4 h-4 text-blue-500" />
-                Age
-              </FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  {...field}
-                  disabled={!isEditing}
-                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Age is now part of demographics - moved to Demographics section */}
 
-        {/* Primary Condition */}
-        <FormField
-          control={form.control}
-          name="primaryCondition"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                <Activity className="w-4 h-4 text-blue-500" />
-                Primary Condition
-              </FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                disabled={!isEditing}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select condition" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="diabetes">Diabetes</SelectItem>
-                  <SelectItem value="hypertension">Hypertension</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Primary Condition moved to Medical section */}
       </div>
     </div>
   );

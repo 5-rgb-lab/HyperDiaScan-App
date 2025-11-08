@@ -4,7 +4,7 @@ import NutritionForm from '@/components/NutritionForm';
 import HealthAssessment from '@/components/HealthAssessment';
 import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
 import { createScanAuditLog } from '@/admin/lib/auditLog';
-import { analyzeFood } from '@/lib/analyzeFood';
+import { analyzeFood, generatePersonalizedDailyTips } from '@/lib/analyzeFood';
 import { saveScanRecord, updateUserHealthTips } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { userProfileSchema } from '@shared/schema';
@@ -36,17 +36,29 @@ export default function Scanner() {
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   const isProfileComplete = (profile: any) => {
-    if (!profile) return false;
+    if (!profile) {
+      console.warn("❌ Profile is null or undefined");
+      return false;
+    }
     try {
       userProfileSchema.parse(profile);
+      console.log("✅ Profile validation passed:", profile);
       return true;
     } catch (error) {
+      console.warn("❌ Profile validation failed:", error);
       return false;
     }
   };
 
   useEffect(() => {
-    if (user && !isProfileComplete(userProfile)) {
+    console.log('👤 Auth state changed:', { 
+      user: !!user, 
+      userProfile: !!userProfile,
+      profileComplete: userProfile ? isProfileComplete(userProfile) : false 
+    });
+    
+    if (user && userProfile && !isProfileComplete(userProfile)) {
+      console.log('📝 Showing profile modal due to incomplete profile');
       setShowProfileModal(true);
     }
   }, [user, userProfile]);
@@ -59,21 +71,46 @@ export default function Scanner() {
 
 
   const handleScanComplete = (data: NutritionData) => {
-    console.log('Scan completed:', data);
+    console.log('📸 Initial scan data received:', data);
     setScannedData(data);
     setHealthResult(null); // Reset previous results
+    setLoading(false); // Ensure loading is false when new scan is complete
   };
 
   const handleAnalyze = async (data: AnalyzeFoodRequest) => {
+    // Use a ref to track if we've already started analyzing
+    const analysisStarted = loading;
+    
+    if (analysisStarted) {
+      console.log('⏳ Analysis already in progress, skipping...');
+      return;
+    }
+
+    // Set loading immediately to prevent double submission
+    setLoading(true);
+
+    console.log('🔍 handleAnalyze called with:', { 
+      data, 
+      userExists: !!user, 
+      profileExists: !!userProfile,
+      currentScannedData: !!scannedData
+    });
+
     if (!userProfile || !user) {
-      console.warn("No user profile found:", { user: !!user, profile: !!userProfile });
+      console.warn("⚠️ No user profile found:", { user: !!user, profile: !!userProfile });
       setShowProfileModal(true);
       return;
     }
 
     // Verify the profile is complete before proceeding
-    if (!isProfileComplete(userProfile)) {
-      console.warn("Incomplete user profile detected");
+    const profileValidation = isProfileComplete(userProfile);
+    console.log('🏥 Profile validation:', { 
+      isComplete: profileValidation,
+      profile: userProfile 
+    });
+
+    if (!profileValidation) {
+      console.warn("⚠️ Incomplete user profile detected");
       setShowProfileModal(true);
       setToastInfo({
         title: "❌ Incomplete Profile",
@@ -84,12 +121,16 @@ export default function Scanner() {
       return;
     }
 
-    console.log('🍎 Starting Analysis:');
-    console.log('Food Data:', data);
+    console.log('🍎 Starting Analysis:', {
+      foodData: data,
+      condition: data.condition,
+      foodName: data.foodName
+    });
     
+    // Set all states at once to prevent race conditions
+    setLoading(true);
     setCurrentCondition(data.condition === 'both' ? 'diabetes' : data.condition);
     setCurrentFoodName(data.foodName || '');
-    setLoading(true);
 
     try {
       // Send the raw profile without modifying the condition
@@ -157,6 +198,13 @@ export default function Scanner() {
         await updateUserHealthTips(user.uid, healthResult.healthTip);
       }
 
+      // Regenerate personalized daily tips using LLM based on today's scans
+      try {
+        await generatePersonalizedDailyTips(user.uid, userProfile || undefined);
+      } catch (err) {
+        console.error('Error generating personalized daily tips after save:', err);
+      }
+
       setToastInfo({
         title: "✅ Saved!",
         description: "Scan and health tips saved successfully.",
@@ -218,11 +266,7 @@ export default function Scanner() {
         </p>
       </div>
 
-        {!scannedData && (
-          <CameraScanner onScanComplete={handleScanComplete} />
-        )}
-
-        {scannedData && !healthResult && (
+        {!healthResult && (
           <>
             {loading ? (
               <div className="p-6 rounded-lg shadow-md bg-muted text-center space-y-3">
@@ -230,12 +274,14 @@ export default function Scanner() {
                 <p className="font-medium text-primary">Analyzing your nutrition label...</p>
                 <p className="text-sm text-muted-foreground">Checking against your health profile...</p>
               </div>
-            ) : (
+            ) : scannedData ? (
               <NutritionForm 
                 initialData={scannedData} 
                 userCondition={userProfile?.primaryCondition || 'diabetes'}
                 onAnalyze={handleAnalyze} 
               />
+            ) : (
+              <CameraScanner onScanComplete={handleScanComplete} />
             )}
           </>
         )}
