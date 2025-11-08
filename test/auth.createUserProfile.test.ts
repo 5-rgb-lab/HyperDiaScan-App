@@ -1,5 +1,20 @@
 import { describe, it, beforeEach, expect, vi } from 'vitest'
 
+// Prevent real Firebase initialization by mocking firebase modules used by client/src/lib/firebase.ts
+vi.mock('firebase/app', () => ({
+  initializeApp: vi.fn(() => ({}))
+}))
+
+vi.mock('firebase/auth', () => ({
+  getAuth: vi.fn(() => ({})),
+  signInWithEmailAndPassword: vi.fn(),
+  createUserWithEmailAndPassword: vi.fn(),
+  signOut: vi.fn(),
+  onAuthStateChanged: vi.fn(),
+  updateProfile: vi.fn(),
+  sendPasswordResetEmail: vi.fn()
+}))
+
 // Mock firebase/firestore functions used by auth.createUserProfile
 vi.mock('firebase/firestore', () => {
   return {
