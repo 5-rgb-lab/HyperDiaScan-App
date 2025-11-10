@@ -3,7 +3,7 @@
 
 [build]
 # Build command - install deps first, then build Vite frontend only
-command = "npm install && npm run vite:build"
+command = "CI= npm run build"
 # Directory to deploy (Vite output)
 publish = "dist/public"
 # Node version to use
