@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { userProfileSchema } from '@shared/schema';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Shield, Apple } from 'lucide-react';
 import {
   Toast,
   ToastTitle,
@@ -42,7 +44,7 @@ export default function Scanner() {
     }
     try {
       userProfileSchema.parse(profile);
-      console.log("✅ Profile validation passed:", profile);
+      
       return true;
     } catch (error) {
       console.warn("❌ Profile validation failed:", error);
@@ -51,14 +53,7 @@ export default function Scanner() {
   };
 
   useEffect(() => {
-    console.log('👤 Auth state changed:', { 
-      user: !!user, 
-      userProfile: !!userProfile,
-      profileComplete: userProfile ? isProfileComplete(userProfile) : false 
-    });
-    
     if (user && userProfile && !isProfileComplete(userProfile)) {
-      console.log('📝 Showing profile modal due to incomplete profile');
       setShowProfileModal(true);
     }
   }, [user, userProfile]);
@@ -71,7 +66,6 @@ export default function Scanner() {
 
 
   const handleScanComplete = (data: NutritionData) => {
-    console.log('📸 Initial scan data received:', data);
     setScannedData(data);
     setHealthResult(null); // Reset previous results
     setLoading(false); // Ensure loading is false when new scan is complete
@@ -82,19 +76,13 @@ export default function Scanner() {
     const analysisStarted = loading;
     
     if (analysisStarted) {
-      console.log('⏳ Analysis already in progress, skipping...');
       return;
     }
 
     // Set loading immediately to prevent double submission
     setLoading(true);
 
-    console.log('🔍 handleAnalyze called with:', { 
-      data, 
-      userExists: !!user, 
-      profileExists: !!userProfile,
-      currentScannedData: !!scannedData
-    });
+
 
     if (!userProfile || !user) {
       console.warn("⚠️ No user profile found:", { user: !!user, profile: !!userProfile });
@@ -104,10 +92,7 @@ export default function Scanner() {
 
     // Verify the profile is complete before proceeding
     const profileValidation = isProfileComplete(userProfile);
-    console.log('🏥 Profile validation:', { 
-      isComplete: profileValidation,
-      profile: userProfile 
-    });
+
 
     if (!profileValidation) {
       console.warn("⚠️ Incomplete user profile detected");
@@ -121,12 +106,6 @@ export default function Scanner() {
       return;
     }
 
-    console.log('🍎 Starting Analysis:', {
-      foodData: data,
-      condition: data.condition,
-      foodName: data.foodName
-    });
-    
     // Set all states at once to prevent race conditions
     setLoading(true);
     setCurrentCondition(data.condition === 'both' ? 'diabetes' : data.condition);
@@ -135,7 +114,6 @@ export default function Scanner() {
     try {
       // Send the raw profile without modifying the condition
       const result = await analyzeFood(data, userProfile);
-      console.log('Analysis Result:', result);
       setHealthResult(result);
       
       // Show success toast with meaningful health insight
@@ -211,7 +189,6 @@ export default function Scanner() {
         variant: "default",
       });
       setOpen(true);
-      console.log('Scan and tips saved');
     } catch (error) {
       // Create audit log for failed scan save
       await createScanAuditLog(
@@ -266,13 +243,74 @@ export default function Scanner() {
         </p>
       </div>
 
+      {/* Instructions Hero Section */}
+      <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 border-2 border-blue-300 dark:border-blue-700">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="p-3 bg-blue-500 rounded-lg shadow-lg flex-shrink-0">
+              <Apple className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 space-y-3">
+              <h2 className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                📋 How to Find Nutritional Information
+              </h2>
+              <div className="space-y-3 text-sm text-blue-800 dark:text-blue-200">
+                <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
+                  <p className="font-semibold mb-2">🔍 Step 1: Locate the Nutrition Facts Label</p>
+                  <p>Look for the "Nutrition Facts" panel on the back or side of the product package. It's usually a black and white table.</p>
+                </div>
+                
+                <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
+                  <p className="font-semibold mb-2">📝 Step 2: Find Key Information</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li><strong>Serving Size:</strong> Located at the top (e.g., "1 cup (240g)")</li>
+                    <li><strong>Calories:</strong> Usually the first number after serving size</li>
+                    <li><strong>Nutrients:</strong> Listed below calories (carbs, protein, fat, sodium, etc.)</li>
+                  </ul>
+                </div>
+
+                <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
+                  <p className="font-semibold mb-2">✏️ Step 3: Input the Values</p>
+                  <p>Enter each nutrient value into the corresponding field below. <strong>If a nutrient is not listed on the label, simply enter 0.</strong></p>
+                </div>
+
+                <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-300 dark:border-amber-700">
+                  <p className="font-semibold text-amber-900 dark:text-amber-100">💡 Pro Tip:</p>
+                  <p className="text-amber-800 dark:text-amber-200">Pay attention to "per serving" vs "per container" values. Make sure you're entering the per serving amounts!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
         {!healthResult && (
           <>
             {loading ? (
-              <div className="p-6 rounded-lg shadow-md bg-muted text-center space-y-3">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary mx-auto"></div>
-                <p className="font-medium text-primary">Analyzing your nutrition label...</p>
-                <p className="text-sm text-muted-foreground">Checking against your health profile...</p>
+              <div className="space-y-4">
+                <div className="p-6 rounded-lg shadow-md bg-muted text-center space-y-3">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary mx-auto"></div>
+                  <p className="font-medium text-primary">Analyzing your nutrition label...</p>
+                  <p className="text-sm text-muted-foreground">Checking against your health profile...</p>
+                </div>
+                
+                <Card className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30 border-2 border-amber-300 dark:border-amber-700">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-amber-500 rounded-lg shadow-lg flex-shrink-0">
+                        <Shield className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100 mb-1 flex items-center gap-1">
+                          <span>⚠️</span> Medical Disclaimer
+                        </h3>
+                        <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                          This analysis is for informational purposes only and should not replace professional medical advice. Always consult with your healthcare provider before making dietary decisions.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             ) : scannedData ? (
               <NutritionForm 

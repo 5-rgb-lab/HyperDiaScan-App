@@ -27,7 +27,7 @@ export default function Profile() {
   const handleSaveProfile = async (data: any) => {
     try {
       await updateProfile(data);
-      console.log('Profile saved successfully');
+
     } catch (error) {
       console.error('Error saving profile:', error);
     }

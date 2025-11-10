@@ -181,7 +181,7 @@ export default function AuthForm() {
               <Activity className="w-8 h-8 text-white" />
             </div>
             <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-              HyperDiaScan
+              HyperDiaScense
             </CardTitle>
           </div>
           <p className="text-muted-foreground">Sign in or create an account</p>

@@ -101,7 +101,6 @@ export default function NutritionForm({
         condition: data.condition || userCondition,
       };
 
-      console.log("Submitting nutrition data:", formattedData);
 
       if (!onAnalyze) throw new Error("onAnalyze function not provided!");
       await onAnalyze(formattedData);
@@ -175,10 +174,10 @@ export default function NutritionForm({
                     { name: "servingSize", label: "Serving Size (text)" },
                     { name: "servingsPerContainer", label: "Servings / Container" },
                 ].map((fieldData) => (
-                  <FormField<AnalyzeFoodRequest>
+                  <FormField
                     key={fieldData.name}
                     control={form.control}
-                    name={fieldData.name as keyof AnalyzeFoodRequest}
+                    name={fieldData.name as any}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{fieldData.label}</FormLabel>
@@ -196,7 +195,8 @@ export default function NutritionForm({
                                 value={typeof field.value === 'number' ? (field.value === 0 ? "" : field.value) : ""}
                                 onChange={(e) => {
                                   const value = e.target.value;
-                                  field.onChange(value === "" ? 0 : Math.max(0, parseFloat(value) || 0));
+                                  const numValue = value === "" ? 0 : parseFloat(value) || 0;
+                                  field.onChange(Math.max(0, numValue));
                                 }}
                               />
                             )}
