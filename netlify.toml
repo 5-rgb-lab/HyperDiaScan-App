@@ -1,0 +1,36 @@
+# Netlify Configuration for HyperDiaScan
+
+[build]
+# Build command - builds both React frontend and Express server
+command = "npm run build"
+# Directory to deploy (Vite output + server bundle)
+publish = "dist"
+# Node version to use
+node_version = "18"
+
+[functions]
+# Configure serverless functions if needed later
+directory = "dist"
+
+# Redirect all non-matching routes to index.html for React Router (SPA routing)
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+# API routes - if you have /api/* endpoints, configure them here
+[[redirects]]
+from = "/api/*"
+to = "/.netlify/functions/server/:splat"
+status = 200
+
+# Environment configuration
+[env.production]
+NODE_ENV = "production"
+
+[context.production.environment]
+NODE_ENV = "production"
+
+# Dev context for local testing
+[context.development]
+NODE_ENV = "development"
