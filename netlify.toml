@@ -15,6 +15,9 @@ from = "/*"
 to = "/index.html"
 status = 200
 
+[build.environment]
+  NPM_CONFIG_PRODUCTION = "false"
+
 # Environment configuration
 [env.production]
 NODE_ENV = "production"
