@@ -4,43 +4,29 @@ import {
   History,
   Shield,
   User,
-  TrendingUp,
   Activity,
-  Heart,
-  Target,
-  Star,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { subscribeToUserScanHistory, subscribeToUserProfile } from '@/lib/firestore';
+import { subscribeToUserScanHistory } from '@/lib/firestore';
 
 export default function Home() {
   const { user, userProfile } = useAuth();
   const [recentScans, setRecentScans] = useState<any[]>([]);
-  const [dailyStats, setDailyStats] = useState({
-    scansToday: 0,
-    safeScans: 0,
-    riskyScans: 0,
-    totalScans: 0,
-  });
-  const [dailyProgress, setDailyProgress] = useState(0);
 
   // Fetch + listen to Firestore user data
   useEffect(() => {
     if (!user) {
       setRecentScans([]);
-      setDailyStats({ scansToday: 0, safeScans: 0, riskyScans: 0, totalScans: 0 });
       return;
     }
 
     const unsubscribe = subscribeToUserScanHistory(user.uid, (rawRecords: any[] | null) => {
       if (!rawRecords || rawRecords.length === 0) {
         setRecentScans([]);
-        setDailyStats({ scansToday: 0, safeScans: 0, riskyScans: 0, totalScans: 0 });
         return;
       }
 
@@ -51,42 +37,18 @@ export default function Home() {
 
       const mapped = sorted.map((r) => ({
         name: r.foodName || 'Unknown Food',
-        // Normalize stored prediction to a user-friendly display string
-        // r.prediction may be a string like 'Safe'|'Risky' or an object { prediction: 'Safe', reasoning }
         result: (() => {
           const raw = typeof r.prediction === 'string' ? r.prediction : r.prediction?.prediction || 'unknown';
           if (!raw) return 'unknown';
           const low = String(raw).toLowerCase();
           if (low === 'safe') return 'Safe for Consumption';
           if (low === 'risky') return 'Not Recommended';
-          // fallback: capitalize
           return String(raw);
         })(),
         time: new Date(r.timestamp).toLocaleString(),
       }));
 
       setRecentScans(mapped);
-
-      // --- Daily Summary Calculations ---
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-      const scansToday = rawRecords.filter((r) => new Date(r.timestamp) >= startOfDay).length;
-      const safeScans = rawRecords.filter((r) => {
-        const val = String(r.prediction?.prediction || r.prediction || '').toLowerCase();
-        return val === 'safe';
-      }).length;
-      const riskyScans = rawRecords.filter((r) => {
-        const val = String(r.prediction?.prediction || r.prediction || '').toLowerCase();
-        return val === 'risky';
-      }).length;
-      const totalScans = rawRecords.length;
-
-      setDailyStats({ scansToday, safeScans, riskyScans, totalScans });
-
-      // Progress: percentage of scans today vs total
-      const progress = totalScans > 0 ? Math.min((scansToday / totalScans) * 100, 100) : 0;
-      setDailyProgress(progress);
     });
 
     return unsubscribe;
@@ -103,95 +65,109 @@ export default function Home() {
     }
   };
 
-  // Health tips state and rotation
-  const [currentTip, setCurrentTip] = useState(0);
-  const [healthTips, setHealthTips] = useState<Array<{icon: any, color: string, title: string, content: string}>>([]);
-  
-  // Icons and colors for tips
-  const tipStyles = [
-    { icon: Heart, color: 'from-red-500 to-pink-500', title: '' },
-    { icon: Target, color: 'from-blue-500 to-indigo-500', title: '' },
-    { icon: Shield, color: 'from-green-500 to-teal-500', title: '' },
-    { icon: Star, color: 'from-yellow-500 to-orange-500', title: '' },
-    { icon: Activity, color: 'from-purple-500 to-indigo-500', title: '' },
-  ];
-
-  // Subscribe to user profile changes for real-time tips updates
-  useEffect(() => {
-    if (!user) {
-      setHealthTips([]);
-      return;
-    }
-
-    const unsubscribe = subscribeToUserProfile(user.uid, (profile: { tips?: Array<{ content: string }> } | undefined) => {
-      if (profile?.tips) {
-        const formattedTips = profile.tips.map((tip: { content: string }, index: number) => ({
-          ...tipStyles[index % tipStyles.length],
-          content: tip.content,
-        }));
-        setHealthTips(formattedTips);
-        // Reset current tip index if it's out of bounds
-        if (currentTip >= formattedTips.length) {
-          setCurrentTip(0);
-        }
-      } else {
-        setHealthTips([]);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
   const quickActions = [
     { icon: Camera, title: 'Scan Food', href: '/scanner', color: 'from-blue-500 to-cyan-500' },
-    { icon: History, title: 'View History', href: '/history', color: 'from-purple-500 to-pink-500' },
+    { icon: History, title: 'View History & Analytics', href: '/history', color: 'from-purple-500 to-pink-500' },
     { icon: User, title: 'Update Profile', href: '/profile', color: 'from-green-500 to-emerald-500' },
   ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTip((prev) => (prev + 1) % healthTips.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [healthTips.length]);
 
   return (
     <div className="space-y-6">
 
-      <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
-          Welcome Back
-        </h1>
-        <p className="text-muted-foreground">
-          Track your health journey with smart food analysis
-        </p>
+      {/* Hero Section - System Showcase */}
+      <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl p-8 md:p-12 text-white shadow-2xl overflow-hidden relative">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 translate-y-1/3"></div>
+        </div>
+
+        <div className="relative text-center space-y-6">
+          {/* Logo/Icon */}
+          <div className="flex justify-center">
+            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-xl">
+              <Activity className="w-16 h-16 text-white" />
+            </div>
+          </div>
+
+          {/* Main Title */}
+          <div className="space-y-3">
+            <h1 className="text-4xl md:text-6xl font-bold" data-testid="text-profile-title">
+              HyperDiaScense
+            </h1>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-sm px-3 py-1">
+                🤖 AI-Powered
+              </Badge>
+              <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-sm px-3 py-1">
+                📊 Nutritional Analysis
+              </Badge>
+            </div>
+          </div>
+
+          {/* Subtitle */}
+          <p className="text-xl md:text-2xl text-blue-50 font-medium max-w-3xl mx-auto leading-relaxed">
+            AI-Driven Nutritional Label Analysis System for People with Hypertension and Diabetes
+          </p>
+
+          {/* Welcome Message */}
+          {userProfile?.name && (
+            <p className="text-blue-100 text-lg">
+              Welcome back, <span className="font-semibold">{userProfile.name}</span>! Track your health journey with smart food analysis.
+            </p>
+          )}
+
+          {/* CTA Button */}
+          <div className="pt-4">
+            <Link href="/scanner">
+              <Button className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300">
+                <Camera className="w-5 h-5 mr-2" />
+                Analyze Food Now
+              </Button>
+            </Link>
+          </div>
+
+          {/* Feature Highlights */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-8 max-w-3xl mx-auto">
+            {[
+              { icon: '💡', title: 'Personalized AI Insights', desc: 'Tailored recommendations for your health' },
+              { icon: '📈', title: 'Track Progress', desc: 'Monitor your health journey' }
+            ].map((feature, index) => (
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="text-3xl mb-2">{feature.icon}</div>
+                <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
+                <p className="text-blue-100 text-sm">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Daily Summary */}
-      <Card className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-950/50 dark:to-green-950/50 border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-            Daily Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{dailyStats.scansToday}</div>
-              <div className="text-sm text-muted-foreground">Scans Today</div>
+      {/* Medical Disclaimer Section */}
+      <Card className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30 border-2 border-amber-300 dark:border-amber-700 shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-amber-500 rounded-xl shadow-lg flex-shrink-0">
+              <Shield className="w-6 h-6 text-white" />
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{dailyStats.safeScans}</div>
-              <div className="text-sm text-muted-foreground">Safe Foods</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{dailyStats.riskyScans}</div>
-              <div className="text-sm text-muted-foreground">Risky Foods</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{dailyStats.totalScans}</div>
-              <div className="text-sm text-muted-foreground">Total Scans</div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">
+                <span>⚠️</span> Important Medical Disclaimer
+              </h2>
+              <div className="space-y-2 text-amber-800 dark:text-amber-200">
+                <p className="leading-relaxed">
+                  <strong>This application is a health assistance tool only and should not replace professional medical advice.</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Do not rely entirely on the analysis results provided by this system</li>
+                  <li>Always consult with your doctor or healthcare provider before making dietary decisions</li>
+                  <li>This tool is designed to support, not substitute, your healthcare professional's guidance</li>
+                  <li>Individual health needs vary - seek personalized medical advice for your specific condition</li>
+                </ul>
+                <p className="text-sm font-semibold mt-3">
+                  If you have any concerns about your health or diet, please contact your healthcare provider immediately.
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -223,39 +199,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Health Insights & Tips */}
-      {healthTips.length > 0 && (
-        <Card className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50/50 dark:from-gray-800 dark:to-blue-950/50 border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div
-                className={`p-3 rounded-xl bg-gradient-to-br ${healthTips[currentTip].color} shadow-lg flex-shrink-0`}
-              >
-                {React.createElement(healthTips[currentTip].icon, { className: 'w-6 h-6 text-white' })}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground mb-2">{healthTips[currentTip].title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {healthTips[currentTip].content}
-                </p>
-              </div>
-            </div>
-            {healthTips.length > 1 && (
-              <div className="flex justify-center mt-4 gap-2">
-                {healthTips.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === currentTip ? 'bg-blue-500 w-6' : 'bg-gray-300'
-                    }`}
-                    onClick={() => setCurrentTip(index)}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Health Insights & Tips moved to History page */}
 
       {/* Recent Activity */}
       {recentScans.length > 0 && (

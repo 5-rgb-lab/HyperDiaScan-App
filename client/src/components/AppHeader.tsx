@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Activity, User, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,7 +30,7 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
     console.log('Theme toggled:', !isDark ? 'dark' : 'light');
   };
 
-  
+
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-lg">
@@ -43,7 +42,7 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
             </div>
             <div>
               <h1 className="text-xl font-bold text-white" data-testid="text-app-title">
-                HyperDiaScan
+                HyperDiaScense
               </h1>
               <p className="text-white/80 text-sm hidden sm:block">
                 Quick-Scan Food Analyzer
@@ -65,8 +64,8 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className="relative h-10 w-10 rounded-full hover:bg-white/20"
                     data-testid="button-user-menu"
                   >

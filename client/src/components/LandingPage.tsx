@@ -72,7 +72,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
             </div>
             <div>
               <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-                HyperDiaScan
+                HyperDiaScense
               </h1>
               <p className="text-sm text-muted-foreground mt-1">Smart Food Analysis</p>
             </div>

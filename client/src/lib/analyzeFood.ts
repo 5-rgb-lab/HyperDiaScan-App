@@ -56,7 +56,7 @@ export const analyzeFood = async (
     }
 
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 20_000)
+    const timeout = setTimeout(() => controller.abort(), 60_000)
 
     let response: Response
     try {
@@ -209,7 +209,7 @@ Respond strictly as JSON: [{"content":"tip 1"}, {"content":"tip 2"}, {"content":
     }
 
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 15_000)
+    const timeout = setTimeout(() => controller.abort(), 60_000)
 
     let response: Response
     try {
