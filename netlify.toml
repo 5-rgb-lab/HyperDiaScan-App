@@ -1,27 +1,18 @@
 # Netlify Configuration for HyperDiaScan
+# This deploys the React frontend built by Vite
 
 [build]
-# Build command - builds both React frontend and Express server
-command = "npm run build"
-# Directory to deploy (Vite output + server bundle)
-publish = "dist"
+# Build command - install deps first, then build Vite frontend only
+command = "npm install && npm run vite:build"
+# Directory to deploy (Vite output)
+publish = "dist/public"
 # Node version to use
 node_version = "18"
-
-[functions]
-# Configure serverless functions if needed later
-directory = "dist"
 
 # Redirect all non-matching routes to index.html for React Router (SPA routing)
 [[redirects]]
 from = "/*"
 to = "/index.html"
-status = 200
-
-# API routes - if you have /api/* endpoints, configure them here
-[[redirects]]
-from = "/api/*"
-to = "/.netlify/functions/server/:splat"
 status = 200
 
 # Environment configuration
