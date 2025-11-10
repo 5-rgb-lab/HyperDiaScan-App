@@ -27,7 +27,6 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
-    console.log('Theme toggled:', !isDark ? 'dark' : 'light');
   };
 
 

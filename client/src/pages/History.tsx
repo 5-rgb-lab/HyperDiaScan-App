@@ -205,7 +205,6 @@ export default function History() {
   const handleDeleteRecord = async (id: string) => {
     try {
       await deleteScanRecord(id);
-      console.log('Record deleted:', id);
     } catch (error) {
       console.error('Error deleting record:', error);
     }

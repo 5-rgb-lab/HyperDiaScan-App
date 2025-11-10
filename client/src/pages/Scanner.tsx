@@ -44,7 +44,7 @@ export default function Scanner() {
     }
     try {
       userProfileSchema.parse(profile);
-      console.log("✅ Profile validation passed:", profile);
+      
       return true;
     } catch (error) {
       console.warn("❌ Profile validation failed:", error);
@@ -53,14 +53,7 @@ export default function Scanner() {
   };
 
   useEffect(() => {
-    console.log('👤 Auth state changed:', { 
-      user: !!user, 
-      userProfile: !!userProfile,
-      profileComplete: userProfile ? isProfileComplete(userProfile) : false 
-    });
-    
     if (user && userProfile && !isProfileComplete(userProfile)) {
-      console.log('📝 Showing profile modal due to incomplete profile');
       setShowProfileModal(true);
     }
   }, [user, userProfile]);
@@ -73,7 +66,6 @@ export default function Scanner() {
 
 
   const handleScanComplete = (data: NutritionData) => {
-    console.log('📸 Initial scan data received:', data);
     setScannedData(data);
     setHealthResult(null); // Reset previous results
     setLoading(false); // Ensure loading is false when new scan is complete
@@ -84,19 +76,13 @@ export default function Scanner() {
     const analysisStarted = loading;
     
     if (analysisStarted) {
-      console.log('⏳ Analysis already in progress, skipping...');
       return;
     }
 
     // Set loading immediately to prevent double submission
     setLoading(true);
 
-    console.log('🔍 handleAnalyze called with:', { 
-      data, 
-      userExists: !!user, 
-      profileExists: !!userProfile,
-      currentScannedData: !!scannedData
-    });
+
 
     if (!userProfile || !user) {
       console.warn("⚠️ No user profile found:", { user: !!user, profile: !!userProfile });
@@ -106,10 +92,7 @@ export default function Scanner() {
 
     // Verify the profile is complete before proceeding
     const profileValidation = isProfileComplete(userProfile);
-    console.log('🏥 Profile validation:', { 
-      isComplete: profileValidation,
-      profile: userProfile 
-    });
+
 
     if (!profileValidation) {
       console.warn("⚠️ Incomplete user profile detected");
@@ -123,12 +106,6 @@ export default function Scanner() {
       return;
     }
 
-    console.log('🍎 Starting Analysis:', {
-      foodData: data,
-      condition: data.condition,
-      foodName: data.foodName
-    });
-    
     // Set all states at once to prevent race conditions
     setLoading(true);
     setCurrentCondition(data.condition === 'both' ? 'diabetes' : data.condition);
@@ -137,7 +114,6 @@ export default function Scanner() {
     try {
       // Send the raw profile without modifying the condition
       const result = await analyzeFood(data, userProfile);
-      console.log('Analysis Result:', result);
       setHealthResult(result);
       
       // Show success toast with meaningful health insight
@@ -213,7 +189,6 @@ export default function Scanner() {
         variant: "default",
       });
       setOpen(true);
-      console.log('Scan and tips saved');
     } catch (error) {
       // Create audit log for failed scan save
       await createScanAuditLog(

@@ -12,9 +12,6 @@ export const analyzeFood = async (
   userProfile: UserProfile
 ): Promise<HealthPrediction> => {
   try {
-    console.log("🧑 User Profile:", JSON.stringify(userProfile, null, 2))
-    console.log("🍎 Nutrition Data:", JSON.stringify(nutritionData, null, 2))
-
     // Validate userProfile against the simplified schema shape
     const missingProfileParts: string[] = []
     if (!userProfile.name) missingProfileParts.push("name")
@@ -27,7 +24,6 @@ export const analyzeFood = async (
     if (missingProfileParts.length) {
       console.warn("⚠️ Missing user profile fields before LLM request:", missingProfileParts)
     } else {
-      console.log("✅ User Profile Validation Passed")
     }
 
     // Validate nutrition data
@@ -41,7 +37,6 @@ export const analyzeFood = async (
     }
 
   const prompt = buildPrompt(nutritionData, userProfile)
-    console.log("🔍 Built Prompt (trimmed):", prompt.slice(0, 1000))
 
     const body: Record<string, any> = {
       model: import.meta.env.VITE_LLM_MODEL || "llama3.2",
@@ -96,7 +91,6 @@ export const analyzeFood = async (
       throw err
     }
 
-    console.log("📥 Raw LLM Response:", result)
 
     const outputCandidates = [
       result.response,
@@ -109,7 +103,6 @@ export const analyzeFood = async (
     ]
 
     const output = outputCandidates.find(Boolean) || ""
-    console.log("🧾 LLM Output (first non-empty):", String(output).slice(0, 1500))
 
     const parsed = parseLlmResponse(String(output))
     return parsed
@@ -132,7 +125,6 @@ export const analyzeFood = async (
  */
 export async function generatePersonalizedDailyTips(userId: string, userProfile?: UserProfile): Promise<void> {
   try {
-    console.log("🧾 Generating daily tips for user:", userId)
 
     const allScans = await getUserScanHistory(userId)
     const today = new Date()
@@ -148,7 +140,6 @@ export async function generatePersonalizedDailyTips(userId: string, userProfile?
       else if (val === 'risky') counts.risky++
     })
 
-    console.log('📊 Today scans:', { total: todaysScans.length, counts })
 
     // Build a structured prompt following the same style used by buildPrompt()
     const userDemographics = userProfile?.demographics
@@ -230,7 +221,6 @@ Respond strictly as JSON: [{"content":"tip 1"}, {"content":"tip 2"}, {"content":
     }
 
     const raw = await response.text()
-    console.log('📥 LLM tips raw output (truncated):', raw.slice(0, 1000))
 
     const tips = parseTipsFromLlm(raw)
     if (!tips || tips.length !== 5) {
@@ -249,7 +239,6 @@ Respond strictly as JSON: [{"content":"tip 1"}, {"content":"tip 2"}, {"content":
 
     // Save tips to user profile
     await updateUserHealthTips(userId, tips)
-    console.log('✅ Saved personalized tips for user:', userId)
   } catch (err) {
     console.error('Error generating personalized tips:', err)
   }

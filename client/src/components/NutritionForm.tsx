@@ -101,7 +101,6 @@ export default function NutritionForm({
         condition: data.condition || userCondition,
       };
 
-      console.log("Submitting nutrition data:", formattedData);
 
       if (!onAnalyze) throw new Error("onAnalyze function not provided!");
       await onAnalyze(formattedData);
