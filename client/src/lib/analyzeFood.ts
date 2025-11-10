@@ -1,10 +1,18 @@
+import { Client } from "@gradio/client"
 import { AnalyzeFoodRequest, UserProfile, HealthPrediction, healthPredictionSchema } from "@shared/schema"
 import { getUserScanHistory, updateUserHealthTips } from "@/lib/firestore"
 
-const LLM_URL = import.meta.env.VITE_LOCAL_LLM_URL || "http://localhost:11434/api/generate"
+// Gradio Space configuration
+const SPACE_NAME = "Eisk/HYDRA-space"
+const CLASSIFY_ENDPOINT = "/classify_food"
 
+// Helpful debug info
+try {
+  // eslint-disable-next-line no-console
+  console.debug('[analyzeFood] Connecting to Gradio space:', SPACE_NAME);
+} catch (e) {}
 /**
- * Analyzes food safety using a local LLaMA model.
+ * Analyzes food safety using the Gradio HYDRA Space.
  * Combines nutrient data + user health profile to determine if food is "Safe" or "Risky".
  */
 export const analyzeFood = async (
@@ -17,13 +25,11 @@ export const analyzeFood = async (
     if (!userProfile.name) missingProfileParts.push("name")
     if (!userProfile.demographics || userProfile.demographics.age === undefined) missingProfileParts.push("demographics.age")
     if (!userProfile.primaryCondition) missingProfileParts.push("primaryCondition")
-    // diabetesStatus and hypertensionStatus are optional in the schema; we'll warn if they might be relevant
     if (userProfile.primaryCondition === 'diabetes' && !userProfile.diabetesStatus) missingProfileParts.push('diabetesStatus')
     if (userProfile.primaryCondition === 'hypertension' && !userProfile.hypertensionStatus) missingProfileParts.push('hypertensionStatus')
 
     if (missingProfileParts.length) {
       console.warn("⚠️ Missing user profile fields before LLM request:", missingProfileParts)
-    } else {
     }
 
     // Validate nutrition data
@@ -36,78 +42,20 @@ export const analyzeFood = async (
       console.warn("⚠️ Missing nutrition data fields:", missingNutrition)
     }
 
-  const prompt = buildPrompt(nutritionData, userProfile)
+    const prompt = buildPrompt(nutritionData, userProfile)
 
-    const body: Record<string, any> = {
-      model: import.meta.env.VITE_LLM_MODEL || "llama3.2",
-      prompt,
-      metadata: { userProfile },
-      messages: [
-        { role: "system", content: "You are a nutrition and health expert." },
-        { role: "user", content: prompt },
-        { role: "user", content: `USER_PROFILE_JSON: ${JSON.stringify(userProfile)}` },
-      ],
-      stream: false,
-    }
+    // Connect to Gradio Space and call the classify_food endpoint
+    const client = await Client.connect(SPACE_NAME)
+    const result = await client.predict(CLASSIFY_ENDPOINT, { prompt })
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 60_000)
-
-    let response: Response
-    try {
-      response = await fetch(LLM_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      })
-    } finally {
-      clearTimeout(timeout)
-    }
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error("❌ Ollama Error Response:", error)
-      console.error("Request details:", {
-        url: LLM_URL,
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      })
-      throw new Error(`LLM error: ${error}`)
-    }
-
-    let result: any
-    try {
-      result = await response.json()
-    } catch (err) {
-      const text = await response.text().catch(() => "<unreadable body>")
-      console.error("❌ Failed to parse JSON from LLM response.", {
-        error: err,
-        rawText: text,
-        status: response.status,
-        contentType: response.headers.get('content-type')
-      })
-      throw err
-    }
-
-
-    const outputCandidates = [
-      result.response,
-      result.text,
-      result.output?.[0]?.content,
-      result.result?.content,
-      result.choices?.[0]?.message?.content,
-      result.choices?.[0]?.text,
-      typeof result === "string" ? result : undefined,
-    ]
-
-    const output = outputCandidates.find(Boolean) || ""
+    // Extract the prediction from the Gradio result
+    // Gradio returns { data: [...] }, so we get the first element
+    const output = (result?.data as any)?.[0] || ""
 
     const parsed = parseLlmResponse(String(output))
     return parsed
   } catch (error) {
-    console.error("❌ LLM call failed:", error)
+    console.error("❌ Gradio Space call failed:", error)
     try {
       console.error("Attempted nutrition data:", JSON.stringify(nutritionData))
       console.error("Attempted userProfile:", JSON.stringify((userProfile as any) || {}, null, 2))
@@ -117,7 +65,7 @@ export const analyzeFood = async (
 }
 
 /**
- * Generate personalized daily health tips for a user using LLM based on today's scans.
+ * Generate personalized daily health tips for a user using Gradio HYDRA Space based on today's scans.
  * - Fetches today's scans
  * - Counts safe vs risky
  * - Asks LLM for 5 short, actionable tips tailored to the user
@@ -139,7 +87,6 @@ export async function generatePersonalizedDailyTips(userId: string, userProfile?
       if (val === 'safe') counts.safe++
       else if (val === 'risky') counts.risky++
     })
-
 
     // Build a structured prompt following the same style used by buildPrompt()
     const userDemographics = userProfile?.demographics
@@ -181,46 +128,18 @@ Total scans: ${todaysScans.length}
 - Safe: ${counts.safe}
 - Risky: ${counts.risky}
 
-
 ### TASK
 Create 5 concise, actionable tips the user can apply today to reduce risk and improve dietary choices. Each tip should be personalized to the profile and today's scan summary.
 
 Respond strictly as JSON: [{"content":"tip 1"}, {"content":"tip 2"}, {"content":"tip 3"}, {"content":"tip 4"}, {"content":"tip 5"}]
 `
 
-    const body: Record<string, any> = {
-      model: import.meta.env.VITE_LLM_MODEL || 'llama3.2',
-      prompt,
-      metadata: { userId, counts, todaysScansLength: todaysScans.length },
-      messages: [
-        { role: 'system', content: 'You are a nutrition and health expert.' },
-        { role: 'user', content: prompt }
-      ],
-      stream: false
-    }
+    // Connect to Gradio Space and call the classify_food endpoint
+    const client = await Client.connect(SPACE_NAME)
+    const result = await client.predict(CLASSIFY_ENDPOINT, { prompt })
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 60_000)
-
-    let response: Response
-    try {
-      response = await fetch(LLM_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      })
-    } finally {
-      clearTimeout(timeout)
-    }
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '<unreadable>')
-      console.error('❌ LLM tips request failed:', response.status, errText)
-      throw new Error('LLM tips request failed')
-    }
-
-    const raw = await response.text()
+    // Extract the raw output from Gradio
+    const raw = String((result?.data as any)?.[0] || "")
 
     const tips = parseTipsFromLlm(raw)
     if (!tips || tips.length !== 5) {
@@ -366,7 +285,7 @@ Hypertension Management:
 Determine if this food is **Safe** or **Risky** for this user. 
 Base your decision on:
 1. Nutritional content vs medical conditions
-2. Patient's current health metrics (BP, blood sugar)
+2. Patient's current health metrics (BP, blood sugar if diabetic)
 3. Overall health status (BMI, activity level)
 4. Medication interactions if relevant
 
