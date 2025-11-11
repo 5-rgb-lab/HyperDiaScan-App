@@ -93,7 +93,7 @@ export default function Home() {
           {/* Main Title */}
           <div className="space-y-3">
             <h1 className="text-4xl md:text-6xl font-bold" data-testid="text-profile-title">
-              HyperDiaScense
+              HyperDiaSense
             </h1>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-sm px-3 py-1">
