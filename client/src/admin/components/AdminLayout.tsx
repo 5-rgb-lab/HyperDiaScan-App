@@ -78,7 +78,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
             <div>
               <h1 className="text-2xl font-bold">Admin Panel</h1>
-              <p className="text-xs text-blue-100">HyperDiaScense</p>
+              <p className="text-xs text-blue-100">HyperDiaSense</p>
             </div>
           </div>
         </div>

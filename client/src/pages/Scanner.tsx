@@ -28,6 +28,7 @@ export default function Scanner() {
   const [currentCondition, setCurrentCondition] = useState<'diabetes' | 'hypertension'>('diabetes');
   const [currentFoodName, setCurrentFoodName] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false)
   const [toastInfo, setToastInfo] = useState<{
     title: string
@@ -143,7 +144,7 @@ export default function Scanner() {
 
   const handleSaveToHistory = async () => {
     if (!user || !scannedData || !healthResult) return;
-    
+    setSaving(true);
     try {
       // Save scan record without health tips
       const scanRecord = {
@@ -209,6 +210,8 @@ export default function Scanner() {
       });
       setOpen(true);
       console.error('Error saving scan and tips:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -352,10 +355,18 @@ export default function Scanner() {
               </button>
               <button
                 onClick={handleSaveToHistory}
-                className="flex-1 py-2 px-4 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+                className="flex-1 py-2 px-4 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 disabled:opacity-60 disabled:cursor-not-allowed"
                 data-testid="button-save-to-history"
+                disabled={saving}
               >
-                Save to History
+                {saving ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-secondary-foreground" />
+                    Saving...
+                  </span>
+                ) : (
+                  'Save to History'
+                )}
               </button>
             </div>
           </div>

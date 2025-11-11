@@ -41,7 +41,7 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
             </div>
             <div>
               <h1 className="text-xl font-bold text-white" data-testid="text-app-title">
-                HyperDiaScense
+                HyperDiaSense
               </h1>
               <p className="text-white/80 text-sm hidden sm:block">
                 Quick-Scan Food Analyzer
