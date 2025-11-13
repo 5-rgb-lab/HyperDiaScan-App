@@ -117,6 +117,24 @@ export default function Scanner() {
       const result = await analyzeFood(data, userProfile);
       setHealthResult(result);
       
+      // Update scannedData with the user-edited nutrition values so HealthAssessment displays them
+      setScannedData({
+        calories: data.calories || 0,
+        carbohydrates: data.carbohydrates || 0,
+        protein: data.protein || 0,
+        fat: data.fat || 0,
+        sodium: data.sodium || 0,
+        fiber: data.fiber || 0,
+        totalSugars: (data as any).totalSugars || 0,
+        addedSugars: (data as any).addedSugars || 0,
+        saturatedFat: (data as any).saturatedFat || 0,
+        transFat: (data as any).transFat || 0,
+        potassium: (data as any).potassium || 0,
+        cholesterol: (data as any).cholesterol || 0,
+        servingSize: (data as any).servingSize || '',
+        servingsPerContainer: (data as any).servingsPerContainer || 0,
+      });
+      
       // Show success toast with meaningful health insight
       const severity = result.prediction === "Safe" ? "default" : "destructive";
       const message = result.prediction === "Safe" 
