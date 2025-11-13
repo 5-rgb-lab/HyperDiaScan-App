@@ -30,6 +30,36 @@ export default function HealthAssessment({
 }: HealthAssessmentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+
+  const getNutrient = (...keys: Array<keyof typeof nutritionData | string>) => {
+    for (const k of keys) {
+      // @ts-ignore - index into dynamic keys
+      const val = (nutritionData as any)[k];
+      if (val === undefined || val === null) continue;
+      const num = Number(val);
+      if (!Number.isNaN(num)) return num;
+    }
+    return 0;
+  };
+
+  // Get all nutrients with proper fallbacks and display formatting
+  const allNutrients = [
+    { label: 'Calories', key: 'calories', unit: 'kcal', value: getNutrient('calories') },
+    { label: 'Carbohydrates', key: 'carbohydrates', unit: 'g', value: getNutrient('carbohydrates') },
+    { label: 'Protein', key: 'protein', unit: 'g', value: getNutrient('protein') },
+    { label: 'Total Fat', key: 'fat', unit: 'g', value: getNutrient('fat', 'totalFat') },
+    { label: 'Saturated Fat', key: 'saturatedFat', unit: 'g', value: getNutrient('saturatedFat') },
+    { label: 'Trans Fat', key: 'transFat', unit: 'g', value: getNutrient('transFat') },
+    { label: 'Sodium', key: 'sodium', unit: 'mg', value: getNutrient('sodium') },
+    { label: 'Potassium', key: 'potassium', unit: 'mg', value: getNutrient('potassium') },
+    { label: 'Cholesterol', key: 'cholesterol', unit: 'mg', value: getNutrient('cholesterol') },
+    { label: 'Dietary Fiber', key: 'fiber', unit: 'g', value: getNutrient('fiber', 'dietaryFiber') },
+    { label: 'Total Sugars', key: 'totalSugars', unit: 'g', value: getNutrient('totalSugars', 'sugar') },
+    { label: 'Added Sugars', key: 'addedSugars', unit: 'g', value: getNutrient('addedSugars') },
+    { label: 'Serving Size', key: 'servingSize', unit: '', value: (nutritionData as any).servingSize || '' },
+    { label: 'Servings Per Container', key: 'servingsPerContainer', unit: '', value: getNutrient('servingsPerContainer') },
+  ];
+
   const getStatusColor = () => {
     switch (prediction) {
       case 'safe': return 'text-green-600 border-green-200 bg-green-50';
@@ -106,27 +136,13 @@ export default function HealthAssessment({
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Calories:</span> {nutritionData.calories}
-                </div>
-                <div>
-                  <span className="font-medium">Carbs:</span> {nutritionData.carbohydrates}g
-                </div>
-                <div>
-                  <span className="font-medium">Protein:</span> {nutritionData.protein}g
-                </div>
-                <div>
-                  <span className="font-medium">Fat:</span> {nutritionData.fat}g
-                </div>
-                <div>
-                  <span className="font-medium">Sodium:</span> {nutritionData.sodium}mg
-                </div>
-                <div>
-                  <span className="font-medium">Fiber:</span> {nutritionData.fiber}g
-                </div>
-                <div>
-                  <span className="font-medium">Sugar:</span> {(nutritionData.totalSugars ?? nutritionData.sugar ?? 0)}g
-                </div>
+                {allNutrients.map((nutrient) => (
+                  <div key={nutrient.key}>
+                    <span className="font-medium">{nutrient.label}:</span>{' '}
+                    {typeof nutrient.value === 'string' ? nutrient.value : nutrient.value}
+                    {nutrient.unit && <span className="text-xs text-muted-foreground ml-1">{nutrient.unit}</span>}
+                  </div>
+                ))}
               </div>
             </div>
           </CollapsibleContent>
