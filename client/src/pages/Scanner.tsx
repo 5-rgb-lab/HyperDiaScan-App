@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import CameraScanner from '@/components/CameraScanner';
+import React, { useState, useEffect, useRef } from 'react';
 import NutritionForm from '@/components/NutritionForm';
 import HealthAssessment from '@/components/HealthAssessment';
 import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
@@ -10,8 +9,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { userProfileSchema } from '@shared/schema';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Shield, Apple } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { PenLine } from 'lucide-react';
+import ScannerInstructions from '@/components/ScannerInstructions';
+import ScannerLoadingCard from '@/components/ScannerLoadingCard';
+import { useIsMobile } from '@/hooks/use-mobile'
+import { analyzeImageFile } from '@/lib/analyzeImage'
 import {
   Toast,
   ToastTitle,
@@ -23,20 +26,20 @@ import {
 
 export default function Scanner() {
   const { user, userProfile } = useAuth();
-  const [scannedData, setScannedData] = useState<NutritionData | null>(null);
-  const [healthResult, setHealthResult] = useState<HealthPrediction | null>(null);
-  const [currentCondition, setCurrentCondition] = useState<'diabetes' | 'hypertension'>('diabetes');
-  const [currentFoodName, setCurrentFoodName] = useState<string>('');
+  const [scannedData, setScannedData] = useState(null as (NutritionData | null));
+  const [healthResult, setHealthResult] = useState(null as (HealthPrediction | null));
+  const [currentCondition, setCurrentCondition] = useState('diabetes' as ('diabetes' | 'hypertension'));
+  const [currentFoodName, setCurrentFoodName] = useState('' as string);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false)
-  const [toastInfo, setToastInfo] = useState<{
-    title: string
-    description: string
-    variant?: "default" | "destructive"
-  }>({ title: "", description: "", variant: "default" })
+  const [toastInfo, setToastInfo] = useState({ title: "", description: "", variant: "default" } as {
+    title: string;
+    description: string;
+    variant?: "default" | "destructive";
+  })
 
-  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false as boolean);
 
   const isProfileComplete = (profile: any) => {
     if (!profile) {
@@ -71,6 +74,53 @@ export default function Scanner() {
     setHealthResult(null); // Reset previous results
     setLoading(false); // Ensure loading is false when new scan is complete
   };
+
+  // File input ref for upload / camera capture
+  const fileInputRef = useRef(null as (HTMLInputElement | null))
+  const isMobile = useIsMobile()
+
+  const handleFileSelected = async (file?: File | null) => {
+    if (!file) return
+    setLoading(true)
+    try {
+      const parsed = await analyzeImageFile(file, userProfile ?? undefined)
+      setHealthResult(parsed)
+      // If LLM returned nutritionData attach it to scannedData
+      if ((parsed as any).nutritionData) {
+        setScannedData((parsed as any).nutritionData)
+      }
+    } catch (err) {
+      console.error('Error processing image:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openFilePicker = () => {
+    if (!fileInputRef.current) return
+    fileInputRef.current.value = ''
+    fileInputRef.current.click()
+  }
+
+  const handleStartEmpty = () => {
+    setScannedData({
+      calories: 0,
+      carbohydrates: 0,
+      protein: 0,
+      fat: 0,
+      sodium: 0,
+      fiber: 0,
+      totalSugars: 0,
+      addedSugars: 0,
+      saturatedFat: 0,
+      transFat: 0,
+      potassium: 0,
+      cholesterol: 0,
+      servingSize: '',
+      servingsPerContainer: 1,
+    })
+    setHealthResult(null)
+  }
 
   const handleAnalyze = async (data: AnalyzeFoodRequest) => {
     // Use a ref to track if we've already started analyzing
@@ -264,75 +314,25 @@ export default function Scanner() {
         </p>
       </div>
 
-      {/* Instructions Hero Section */}
-      <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 border-2 border-blue-300 dark:border-blue-700">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="p-3 bg-blue-500 rounded-lg shadow-lg flex-shrink-0">
-              <Apple className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1 space-y-3">
-              <h2 className="text-xl font-bold text-blue-900 dark:text-blue-100">
-                📋 How to Find Nutritional Information
-              </h2>
-              <div className="space-y-3 text-sm text-blue-800 dark:text-blue-200">
-                <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-                  <p className="font-semibold mb-2">🔍 Step 1: Locate the Nutrition Facts Label</p>
-                  <p>Look for the "Nutrition Facts" panel on the back or side of the product package. It's usually a black and white table.</p>
-                </div>
-                
-                <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-                  <p className="font-semibold mb-2">📝 Step 2: Find Key Information</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li><strong>Serving Size:</strong> Located at the top (e.g., "1 cup (240g)")</li>
-                    <li><strong>Calories:</strong> Usually the first number after serving size</li>
-                    <li><strong>Nutrients:</strong> Listed below calories (carbs, protein, fat, sodium, etc.)</li>
-                  </ul>
-                </div>
+      <ScannerInstructions />
 
-                <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-                  <p className="font-semibold mb-2">✏️ Step 3: Input the Values</p>
-                  <p>Enter each nutrient value into the corresponding field below. <strong>If a nutrient is not listed on the label, simply enter 0.</strong></p>
-                </div>
-
-                <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-300 dark:border-amber-700">
-                  <p className="font-semibold text-amber-900 dark:text-amber-100">💡 Pro Tip:</p>
-                  <p className="text-amber-800 dark:text-amber-200">Pay attention to "per serving" vs "per container" values. Make sure you're entering the per serving amounts!</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Hidden file input used for both camera capture on mobile and file picker on desktop */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture={isMobile ? 'environment' : undefined}
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null
+            handleFileSelected(f)
+          }}
+        />
 
         {!healthResult && (
           <>
             {loading ? (
-              <div className="space-y-4">
-                <div className="p-6 rounded-lg shadow-md bg-muted text-center space-y-3">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-primary mx-auto"></div>
-                  <p className="font-medium text-primary">Analyzing your nutrition label...</p>
-                  <p className="text-sm text-muted-foreground">Checking against your health profile...</p>
-                </div>
-                
-                <Card className="bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/30 dark:via-orange-950/30 dark:to-red-950/30 border-2 border-amber-300 dark:border-amber-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-amber-500 rounded-lg shadow-lg flex-shrink-0">
-                        <Shield className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100 mb-1 flex items-center gap-1">
-                          <span>⚠️</span> Medical Disclaimer
-                        </h3>
-                        <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-                          This analysis is for informational purposes only and should not replace professional medical advice. Always consult with your healthcare provider before making dietary decisions.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <ScannerLoadingCard />
             ) : scannedData ? (
               <NutritionForm 
                 initialData={scannedData} 
@@ -340,9 +340,47 @@ export default function Scanner() {
                 onAnalyze={handleAnalyze} 
               />
             ) : (
-              <CameraScanner onScanComplete={handleScanComplete} />
+              <div className="grid gap-4">
+                <div className="flex gap-2">
+                  
+
+                  <Card className="p-6 space-y-4 flex-1">
+                    <div className="flex items-center gap-2">
+                      <PenLine className="w-5 h-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Manual Nutrition Input</h3>
+                    </div>
+                    <p className="text-muted-foreground text-sm">Enter nutritional values manually to analyze your food item.</p>
+                    <Button onClick={handleStartEmpty} className="w-full">Start Manual Entry</Button>
+                    <Button className="w-full" onClick={openFilePicker}>
+                    {isMobile ? 'Take Photo' : 'Upload Image'}
+                  </Button>
+                  </Card>
+                </div>
+              </div>
             )}
           </>
+        )}
+
+        {healthResult && !scannedData && (
+          <div className="space-y-6">
+            <Card className="p-6 border-destructive bg-destructive/5">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-destructive">Analysis Error</h3>
+                <p className="text-sm text-muted-foreground">{healthResult.reasoning}</p>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button variant="outline" onClick={() => {
+                  setHealthResult(null)
+                  setScannedData(null)
+                }}>
+                  Back to Options
+                </Button>
+                <Button onClick={handleStartEmpty}>
+                  Try Manual Entry
+                </Button>
+              </div>
+            </Card>
+          </div>
         )}
 
         {healthResult && scannedData && (
