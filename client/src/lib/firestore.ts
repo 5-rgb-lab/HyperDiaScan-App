@@ -15,15 +15,40 @@ import {
 import { db } from './firebase';
 import { ScanRecord, InsertScanRecord } from '@shared/schema';
 
-export const saveScanRecord = async (userId: string, scanData: InsertScanRecord): Promise<string> => {
+export const saveScanRecord = async (
+  userId: string,
+  scanData: InsertScanRecord,
+  imageFile?: File | null
+): Promise<string> => {
   try {
     const scansCollection = collection(db, 'scanRecords');
-    const docRef = await addDoc(scansCollection, {
+
+    // If an image File is provided, convert to base64 Data URL and include in document
+    let imageDataUrl: string | undefined = undefined;
+    if (imageFile) {
+      try {
+        imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read image file'));
+          reader.readAsDataURL(imageFile);
+        });
+      } catch (readErr) {
+        console.error('Error converting image to base64:', readErr);
+        // Do not fail the entire save for image conversion issues; continue without image
+        imageDataUrl = undefined;
+      }
+    }
+
+    const payload: any = {
       ...scanData,
       userId,
       timestamp: new Date().toISOString(),
-    });
-    
+    };
+
+    if (imageDataUrl) payload.imageDataUrl = imageDataUrl;
+
+    const docRef = await addDoc(scansCollection, payload);
     return docRef.id;
   } catch (error) {
     console.error('Error saving scan record:', error);

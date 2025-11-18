@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import UserProfile from '@/components/UserProfile';
+import { UserProfile } from '@/components/profile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
