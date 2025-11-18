@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import NutritionForm from '@/components/NutritionForm';
-import HealthAssessment from '@/components/HealthAssessment';
+import { NutritionForm, ScannerInstructions, ScannerLoadingCard } from '@/components/scanner';
+import { HealthAssessment, HealthAssessmentImage } from '@/components/health';
 import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
 import { createScanAuditLog } from '@/admin/lib/auditLog';
 import { analyzeFood, generatePersonalizedDailyTips } from '@/lib/analyzeFood';
@@ -11,8 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PenLine } from 'lucide-react';
-import ScannerInstructions from '@/components/ScannerInstructions';
-import ScannerLoadingCard from '@/components/ScannerLoadingCard';
 import { useIsMobile } from '@/hooks/use-mobile'
 import { analyzeImageFile } from '@/lib/analyzeImage'
 import {
@@ -28,6 +26,9 @@ export default function Scanner() {
   const { user, userProfile } = useAuth();
   const [scannedData, setScannedData] = useState(null as (NutritionData | null));
   const [healthResult, setHealthResult] = useState(null as (HealthPrediction | null));
+  const [isImageMode, setIsImageMode] = useState(false);
+  const [sourceImageFile, setSourceImageFile] = useState<File | null>(null);
+  const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
   const [currentCondition, setCurrentCondition] = useState('diabetes' as ('diabetes' | 'hypertension'));
   const [currentFoodName, setCurrentFoodName] = useState('' as string);
   const [loading, setLoading] = useState(false);
@@ -82,7 +83,16 @@ export default function Scanner() {
   const handleFileSelected = async (file?: File | null) => {
     if (!file) return
     setLoading(true)
+    setIsImageMode(true)
     try {
+      // store file and preview URL for later save/display
+      setSourceImageFile(file)
+      try {
+        const url = URL.createObjectURL(file)
+        setSourceImageUrl(url)
+      } catch (e) {
+        setSourceImageUrl(null)
+      }
       const parsed = await analyzeImageFile(file, userProfile ?? undefined)
       setHealthResult(parsed)
       // If LLM returned nutritionData attach it to scannedData
@@ -224,19 +234,25 @@ export default function Scanner() {
           ...healthResult,
         },
       };
-      await saveScanRecord(user.uid, scanRecord);
+      await saveScanRecord(user.uid, scanRecord, sourceImageFile ?? undefined);
+
+      // Firestore save succeeded; clear local preview and file from memory
+      try { if (sourceImageUrl) URL.revokeObjectURL(sourceImageUrl) } catch (e) {}
+      setSourceImageFile(null)
+      setSourceImageUrl(null)
 
       // Create audit log for successful scan analysis and save
       await createScanAuditLog(
         user.uid,
         'scan.saved',
-        `Food scan saved: ${currentFoodName || "Unnamed Food"} (${healthResult.prediction})`,
+        `Food scan saved: ${currentFoodName || "Unnamed Food"} (${healthResult.prediction})${isImageMode ? ' [Image OCR]' : ''}`,
         'success',
         {
           foodName: currentFoodName || "Unnamed Food",
           prediction: healthResult.prediction,
           condition: currentCondition,
-          hasHealthTips: healthResult.healthTip?.length > 0
+          hasHealthTips: healthResult.healthTip?.length > 0,
+          source: isImageMode ? 'image' : 'manual'
         }
       );
 
@@ -254,7 +270,7 @@ export default function Scanner() {
 
       setToastInfo({
         title: "✅ Saved!",
-        description: "Scan and health tips saved successfully.",
+        description: `Scan ${isImageMode ? '(from image)' : '(manual entry)'} and health tips saved successfully.`,
         variant: "default",
       });
       setOpen(true);
@@ -267,7 +283,8 @@ export default function Scanner() {
         'error',
         {
           foodName: currentFoodName || "Unnamed Food",
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
+          source: isImageMode ? 'image' : 'manual'
         }
       );
 
@@ -385,17 +402,22 @@ export default function Scanner() {
 
         {healthResult && scannedData && (
           <div className="space-y-6">
-                {/**
-                 * healthResult currently follows the shared schema: { prediction: 'Safe'|'Risky', reasoning }
-                 * HealthAssessment expects prediction: 'safe'|'moderate'|'risky' and a numeric confidence.
-                 * Map the values conservatively so the UI renders without type errors.
-                 */}
-                <HealthAssessment
-                  prediction={healthResult.prediction === 'Safe' ? 'safe' : 'risky'}
-                  reasoning={healthResult.reasoning}
-                  condition={currentCondition}
-                  nutritionData={scannedData}
-                />
+                {isImageMode ? (
+                  <HealthAssessmentImage
+                    prediction={healthResult.prediction === 'Safe' ? 'safe' : 'risky'}
+                    reasoning={healthResult.reasoning}
+                    condition={currentCondition}
+                    nutritionData={scannedData}
+                    sourceImage={sourceImageUrl || currentFoodName}
+                  />
+                ) : (
+                  <HealthAssessment
+                    prediction={healthResult.prediction === 'Safe' ? 'safe' : 'risky'}
+                    reasoning={healthResult.reasoning}
+                    condition={currentCondition}
+                    nutritionData={scannedData}
+                  />
+                )}
 
             <div className="flex gap-4">
               <button
@@ -403,6 +425,7 @@ export default function Scanner() {
                   setScannedData(null)
                   setHealthResult(null)
                   setCurrentFoodName("")
+                  setIsImageMode(false)
                 }}
                 className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                 data-testid="button-scan-another"

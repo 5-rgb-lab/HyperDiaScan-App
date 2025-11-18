@@ -1,0 +1,7 @@
+export { default as BasicInfoSection } from './BasicInfoSection'
+export { default as BMISection } from './BMISection'
+export { default as DemographicSection } from './DemographicSection'
+export { default as MedicalSection } from './MedicalSection'
+export { default as TreatmentSection } from './TreatmentSection'
+export { default as ProfileActions } from './ProfileActions'
+export { default as UserProfile } from './UserProfile'

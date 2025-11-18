@@ -14,7 +14,8 @@ interface ScanRecord {
   prediction: 'safe' | 'risky';
   reasoning?: string;
   foodName?: string;
-  nutritionData: Record<string, number>; 
+  nutritionData: Record<string, number>;
+  imageUrl?: string;
   };
 
 
@@ -112,7 +113,13 @@ export default function ScanHistory({ records, onViewDetails, onDeleteRecord }: 
                 className="p-4 flex items-center justify-between hover:shadow-lg transition-shadow rounded-xl border"
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <Calendar className="w-6 h-6 text-blue-500 flex-shrink-0" />
+                  <div className="flex-shrink-0">
+                    {record.imageUrl ? (
+                      <img src={record.imageUrl} alt={record.foodName || 'scan'} className="w-12 h-12 rounded-md object-cover border" />
+                    ) : (
+                      <Calendar className="w-6 h-6 text-blue-500" />
+                    )}
+                  </div>
                   <div className="min-w-0">
                     <p className="font-semibold truncate">{record.foodName || 'Unknown Food'}</p>
                     <p className="text-sm text-muted-foreground truncate">{record.date}</p>

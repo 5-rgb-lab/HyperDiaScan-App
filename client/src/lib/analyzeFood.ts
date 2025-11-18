@@ -6,9 +6,15 @@ import { parseLlmResponse } from '@/lib/parseLlm'
 import { parseTipsFromLlm } from '@/lib/tipsParser'
 import { fallbackAnalysis } from '@/lib/fallbackAnalysis'
 
-// Gradio Space configuration
-const SPACE_NAME = 'Eisk/HyperDiaSense'
-const CLASSIFY_ENDPOINT = '/predict'
+// Gradio Space configuration — read from Vite env with process.env fallback
+const SPACE_NAME = (import.meta.env?.VITE_GRADIO_SPACE_NAME as string)
+const CLASSIFY_ENDPOINT = (import.meta.env?.VITE_GRADIO_CLASSIFY_ENDPOINT as string)
+const HF_TOKEN = (import.meta.env?.VITE_HF_TOKEN as string)
+
+// Normalize HF token string to the `hf_...` form expected by @gradio/client
+const TOKEN: (`hf_${string}` | undefined) = HF_TOKEN
+  ? (HF_TOKEN.startsWith('hf_') ? (HF_TOKEN as `hf_${string}`) : (`hf_${HF_TOKEN}` as `hf_${string}`))
+  : undefined
 
 try {
   console.debug('[analyzeFood] Connecting to Gradio space:', SPACE_NAME)
@@ -38,7 +44,7 @@ export const analyzeFood = async (
 
     let output: string
     try {
-      const client = await Client.connect(SPACE_NAME)
+      const client = TOKEN ? await Client.connect(SPACE_NAME, { token: TOKEN }) : await Client.connect(SPACE_NAME)
       const result = await client.predict(CLASSIFY_ENDPOINT, { prompt })
       output = (result?.data as any)?.[0] || ''
     } catch (sendErr) {
@@ -87,7 +93,7 @@ export async function generatePersonalizedDailyTips(userId: string, userProfile?
 
     const prompt = buildTipsPrompt(userProfile, todaysScans, counts)
 
-    const client = await Client.connect(SPACE_NAME)
+    const client = TOKEN ? await Client.connect(SPACE_NAME, { token: TOKEN }) : await Client.connect(SPACE_NAME)
     const result = await client.predict(CLASSIFY_ENDPOINT, { prompt })
 
     const raw = String((result?.data as any)?.[0] || '')

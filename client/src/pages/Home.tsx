@@ -6,10 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscribeToUserScanHistory } from '@/lib/firestore';
-import HomeHero from '@/components/HomeHero';
-import MedicalDisclaimer from '@/components/MedicalDisclaimer';
-import QuickActions from '@/components/QuickActions';
-import RecentScansCard from '@/components/RecentScansCard';
+import { HomeHero, MedicalDisclaimer, QuickActions, RecentScansCard } from '@/components/common';
 
 export default function Home() {
   const { user, userProfile } = useAuth();

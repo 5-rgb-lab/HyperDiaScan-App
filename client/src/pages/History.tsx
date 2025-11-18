@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import ScanHistory from '@/components/ScanHistory';
+import { ScanHistory, RecordDetailsDialog, HistoryAnalytics, HealthTipsCard } from '@/components/health';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscribeToUserScanHistory, deleteScanRecord } from '@/lib/firestore';
-import RecordDetailsDialog from '@/components/RecordDetailsDialog';
-import HistoryAnalytics from '@/components/HistoryAnalytics';
-import HealthTipsCard from '@/components/HealthTipsCard';
 import { Calendar, Heart, Target, Shield, Star, Activity, PieChart as PieChartIcon, BarChart3, TrendingUp } from 'lucide-react';
 import { subscribeToUserProfile } from '@/lib/firestore';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
@@ -19,6 +16,7 @@ interface ScanRecord {
   reasoning?: string;
   foodName?: string;
   nutritionData: Record<string, number>; // dynamic nutrients
+  imageUrl?: string;
 }
 
 export default function History() {
@@ -131,6 +129,7 @@ export default function History() {
             foodName,
             reasoning,
             nutritionData,
+            imageUrl: r.imageDataUrl ?? r.imageUrl ?? r.image_url ?? (r.image && (r.image.url || r.image.path)) ?? undefined,
           };
         });
 
