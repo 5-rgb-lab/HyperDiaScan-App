@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
+
+import { AlertTriangle, CheckCircle, XCircle, Info, TrendingUp, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -16,7 +17,6 @@ interface HealthAssessmentProps {
     fat: number;
     sodium: number;
     fiber: number;
-    // support both legacy `sugar` and new `totalSugars`
     sugar?: number;
     totalSugars?: number;
   };
@@ -30,10 +30,8 @@ export default function HealthAssessment({
 }: HealthAssessmentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-
   const getNutrient = (...keys: Array<keyof typeof nutritionData | string>) => {
     for (const k of keys) {
-      // @ts-ignore - index into dynamic keys
       const val = (nutritionData as any)[k];
       if (val === undefined || val === null) continue;
       const num = Number(val);
@@ -42,57 +40,47 @@ export default function HealthAssessment({
     return 0;
   };
 
-  // Get all nutrients with proper fallbacks and display formatting
   const allNutrients = [
-    { label: 'Calories', key: 'calories', unit: 'kcal', value: getNutrient('calories') },
-    { label: 'Carbohydrates', key: 'carbohydrates', unit: 'g', value: getNutrient('carbohydrates') },
-    { label: 'Protein', key: 'protein', unit: 'g', value: getNutrient('protein') },
-    { label: 'Total Fat', key: 'fat', unit: 'g', value: getNutrient('fat', 'totalFat') },
-    { label: 'Saturated Fat', key: 'saturatedFat', unit: 'g', value: getNutrient('saturatedFat') },
-    { label: 'Trans Fat', key: 'transFat', unit: 'g', value: getNutrient('transFat') },
-    { label: 'Sodium', key: 'sodium', unit: 'mg', value: getNutrient('sodium') },
-    { label: 'Potassium', key: 'potassium', unit: 'mg', value: getNutrient('potassium') },
-    { label: 'Cholesterol', key: 'cholesterol', unit: 'mg', value: getNutrient('cholesterol') },
-    { label: 'Dietary Fiber', key: 'fiber', unit: 'g', value: getNutrient('fiber', 'dietaryFiber') },
-    { label: 'Total Sugars', key: 'totalSugars', unit: 'g', value: getNutrient('totalSugars', 'sugar') },
-    { label: 'Added Sugars', key: 'addedSugars', unit: 'g', value: getNutrient('addedSugars') },
-    { label: 'Serving Size', key: 'servingSize', unit: '', value: (nutritionData as any).servingSize || '' },
-    { label: 'Servings Per Container', key: 'servingsPerContainer', unit: '', value: getNutrient('servingsPerContainer') },
+    { label: 'Calories', key: 'calories', unit: 'kcal', value: getNutrient('calories'), icon: '🔥' },
+    { label: 'Carbohydrates', key: 'carbohydrates', unit: 'g', value: getNutrient('carbohydrates'), icon: '🌾' },
+    { label: 'Protein', key: 'protein', unit: 'g', value: getNutrient('protein'), icon: '💪' },
+    { label: 'Total Fat', key: 'fat', unit: 'g', value: getNutrient('fat', 'totalFat'), icon: '🧈' },
+    { label: 'Saturated Fat', key: 'saturatedFat', unit: 'g', value: getNutrient('saturatedFat'), icon: '⚠️' },
+    { label: 'Trans Fat', key: 'transFat', unit: 'g', value: getNutrient('transFat'), icon: '🚫' },
+    { label: 'Sodium', key: 'sodium', unit: 'mg', value: getNutrient('sodium'), icon: '🧂' },
+    { label: 'Potassium', key: 'potassium', unit: 'mg', value: getNutrient('potassium'), icon: '🍌' },
+    { label: 'Cholesterol', key: 'cholesterol', unit: 'mg', value: getNutrient('cholesterol'), icon: '❤️' },
+    { label: 'Dietary Fiber', key: 'fiber', unit: 'g', value: getNutrient('fiber', 'dietaryFiber'), icon: '🥬' },
+    { label: 'Total Sugars', key: 'totalSugars', unit: 'g', value: getNutrient('totalSugars', 'sugar'), icon: '🍬' },
+    { label: 'Added Sugars', key: 'addedSugars', unit: 'g', value: getNutrient('addedSugars'), icon: '🍭' },
   ];
 
-  const getStatusColor = () => {
-    switch (prediction) {
-      case 'safe': return 'text-green-600 border-green-200 bg-green-50';
-      case 'risky': return 'text-red-600 border-red-200 bg-red-50';
-      default: return 'text-gray-600 border-gray-200 bg-gray-50';
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (prediction) {
-      case 'safe': return <CheckCircle className="w-6 h-6 text-green-600" />;
-      case 'risky': return <XCircle className="w-6 h-6 text-red-600" />;
-      default: return <Info className="w-6 h-6 text-gray-600" />;
-    }
-  };
-
-  const getStatusText = () => {
-    switch (prediction) {
-      case 'safe': return 'Safe for Consumption';
-      case 'risky': return 'Not Recommended';
-      default: return 'Analysis Complete';
-    }
-  };
+  const isSafe = prediction === 'safe';
+  const bgGradient = isSafe 
+    ? 'from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/20'
+    : 'from-red-50 via-orange-50 to-amber-50 dark:from-red-950/20 dark:via-orange-950/20 dark:to-amber-950/20';
+  
+  const borderColor = isSafe ? 'border-green-200 dark:border-green-800' : 'border-red-200 dark:border-red-800';
+  const textColor = isSafe ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
+  const iconBg = isSafe 
+    ? 'bg-gradient-to-br from-green-500 to-teal-500' 
+    : 'bg-gradient-to-br from-red-500 to-orange-500';
 
   return (
-    <Card className={`border-2 ${getStatusColor()}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {getStatusIcon()}
-            <div>
-              <CardTitle className="text-lg" data-testid="text-assessment-result">
-                {getStatusText()}
+    <Card className={`border-2 ${borderColor} bg-gradient-to-br ${bgGradient} overflow-hidden`}>
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1">
+            <div className={`${iconBg} p-3 rounded-2xl shadow-lg flex-shrink-0`}>
+              {isSafe ? (
+                <CheckCircle className="w-8 h-8 text-white" />
+              ) : (
+                <XCircle className="w-8 h-8 text-white" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <CardTitle className={`text-2xl font-bold mb-1 ${textColor}`} data-testid="text-assessment-result">
+                {isSafe ? 'Safe for Consumption' : 'Not Recommended'}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 For {condition === 'diabetes' ? 'Diabetes' : 'Hypertension'} Management
@@ -100,7 +88,8 @@ export default function HealthAssessment({
             </div>
           </div>
           <Badge 
-            variant={prediction === 'safe' ? 'default' : 'destructive'}
+            variant={isSafe ? 'default' : 'destructive'}
+            className="text-sm px-4 py-1 shadow-md"
             data-testid="badge-prediction"
           >
             {prediction.toUpperCase()}
@@ -109,38 +98,62 @@ export default function HealthAssessment({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Confidence Score</span>
+        <div className={`p-4 rounded-xl border-2 ${borderColor} bg-white/50 dark:bg-gray-900/50`}>
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className={`w-5 h-5 ${textColor}`} />
+            <h4 className="font-semibold text-sm">Quick Summary</h4>
           </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {isSafe 
+              ? 'This food item appears suitable for your dietary needs. Continue monitoring your overall intake.'
+              : 'This food item may not align with your health goals. Consider alternatives or consume in moderation.'}
+          </p>
         </div>
 
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
             <Button 
               variant="outline" 
-              className="w-full justify-between"
+              className="w-full justify-between hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all"
               data-testid="button-toggle-reasoning"
             >
-              View Medical Reasoning
-              <Info className="w-4 h-4" />
+              <span className="flex items-center gap-2">
+                <Info className="w-4 h-4" />
+                View Detailed Analysis
+              </span>
+              <span className={`text-xs transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-4">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-2">Analysis Details:</h4>
-              {/* Medical reasoning from the model (preserve newlines) */}
-              <div className="mb-4 text-sm whitespace-pre-wrap" data-testid="text-medical-reasoning">
-                <span className="font-medium">Medical Reasoning:</span>
-                <div className="mt-2">{reasoning || 'No detailed reasoning available.'}</div>
+          <CollapsibleContent className="mt-4 space-y-4">
+            <div className="p-5 bg-white/80 dark:bg-gray-900/80 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertCircle className="w-5 h-5 text-blue-600" />
+                <h4 className="font-semibold">Medical Reasoning</h4>
               </div>
+              <div className="text-sm whitespace-pre-wrap leading-relaxed text-muted-foreground" data-testid="text-medical-reasoning">
+                {reasoning || 'No detailed reasoning available.'}
+              </div>
+            </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div className="p-5 bg-white/80 dark:bg-gray-900/80 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <span>📊</span>
+                Nutrition Facts
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {allNutrients.map((nutrient) => (
-                  <div key={nutrient.key}>
-                    <span className="font-medium">{nutrient.label}:</span>{' '}
-                    {typeof nutrient.value === 'string' ? nutrient.value : nutrient.value}
-                    {nutrient.unit && <span className="text-xs text-muted-foreground ml-1">{nutrient.unit}</span>}
+                  <div 
+                    key={nutrient.key} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600"
+                  >
+                    <span className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-base">{nutrient.icon}</span>
+                      {nutrient.label}
+                    </span>
+                    <span className="text-sm font-bold">
+                      {typeof nutrient.value === 'string' ? nutrient.value : nutrient.value}
+                      {nutrient.unit && <span className="text-xs text-muted-foreground ml-1">{nutrient.unit}</span>}
+                    </span>
                   </div>
                 ))}
               </div>
