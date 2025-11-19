@@ -49,6 +49,7 @@ export default function AuthForm() {
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const signInForm = useForm<SignInData>({
     resolver: zodResolver(signInSchema),
@@ -72,6 +73,7 @@ export default function AuthForm() {
 
   const onSignIn = async (data: SignInData) => {
     setIsLoading(true);
+    setLoadingMessage('Signing you in...');
     try {
       await signIn(data.email, data.password);
       toast({ title: 'Welcome back!', description: 'Signed in successfully.' });
@@ -84,11 +86,13 @@ export default function AuthForm() {
       });
     } finally {
       setIsLoading(false);
+      setLoadingMessage('');
     }
   };
 
   const onSignUp = async (data: SignUpData) => {
     setIsLoading(true);
+    setLoadingMessage('Creating your account...');
     try {
       // Build profileData to match createUserProfile expectations
       const profileData = {
@@ -125,6 +129,7 @@ export default function AuthForm() {
       });
     } finally {
       setIsLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -173,7 +178,26 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 relative">
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl max-w-sm w-full mx-4">
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 rounded-full border-4 border-blue-200 dark:border-blue-900"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 animate-spin"></div>
+                <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-green-500 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                  {loadingMessage}
+                </h3>
+                <p className="text-sm text-muted-foreground">Please wait a moment</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">

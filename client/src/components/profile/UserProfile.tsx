@@ -99,58 +99,54 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
 
   if (loading) return <p className="text-center text-muted-foreground">Loading profile...</p>
 
-  // Card classes for content (matches Home.tsx)
-  const cardClass =
-    "p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg border-0"
-
-  // Trigger gradient wrapper (for icon)
-  const triggerWrapper = (from: string, to: string) =>
-    `flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br ${from} ${to} text-white shadow-lg`
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Accordion type="multiple" defaultValue={["basic"]} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <Accordion type="multiple" defaultValue={["basic"]} className="space-y-4 ">
           {/* Basic Info */}
-          <AccordionItem value="basic">
-            <AccordionTrigger className="flex items-center gap-3">
-              <div className={triggerWrapper("from-blue-500", "to-cyan-500 dark:from-blue-700 dark:to-cyan-700")}>
-                <User className="w-5 h-5" />
+          <AccordionItem value="basic" className="border-0 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-blue-50 hover:via-purple-50 hover:to-teal-50 dark:hover:from-blue-950/30 dark:hover:via-purple-950/30 dark:hover:to-teal-950/30 transition-all duration-300">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-teal-600 shadow-lg">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-lg bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">Basic Information</span>
               </div>
-              <span className="font-semibold text-foreground">Basic Information</span>
             </AccordionTrigger>
-            <AccordionContent className={cardClass}>
+            <AccordionContent className="px-6 pb-6 pt-2">
               <BasicInfoSection form={form} isEditing={isEditing} />
             </AccordionContent>
           </AccordionItem>
 
           {/* Demographics */}
-          <AccordionItem value="demographics">
-            <AccordionTrigger className="flex items-center gap-3">
-              <div className={triggerWrapper("from-emerald-500", "to-lime-500 dark:from-emerald-700 dark:to-lime-700")}>
-                <MapPin className="w-5 h-5" />
+          <AccordionItem value="demographics" className="border-0 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-purple-50 hover:via-teal-50 hover:to-blue-50 dark:hover:from-purple-950/30 dark:hover:via-teal-950/30 dark:hover:to-blue-950/30 transition-all duration-300">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-600 via-teal-600 to-blue-600 shadow-lg">
+                  <MapPin className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-lg bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 bg-clip-text text-transparent">Demographics</span>
               </div>
-              <span className="font-semibold text-foreground">Demographics</span>
             </AccordionTrigger>
-            <AccordionContent className={cardClass}>
+            <AccordionContent className="px-6 pb-6 pt-2">
               <DemographicsSection form={form} isEditing={isEditing} />
             </AccordionContent>
           </AccordionItem>
 
           {/* Medical Info */}
-          <AccordionItem value="medical">
-            <AccordionTrigger className="flex items-center gap-3">
-              <div className={triggerWrapper("from-rose-500", "to-pink-500 dark:from-rose-700 dark:to-pink-700")}>
-                <HeartPulse className="w-5 h-5" />
+          <AccordionItem value="medical" className="border-0 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-teal-50 hover:via-blue-50 hover:to-purple-50 dark:hover:from-teal-950/30 dark:hover:via-blue-950/30 dark:hover:to-purple-950/30 transition-all duration-300">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-teal-600 via-blue-600 to-purple-600 shadow-lg">
+                  <HeartPulse className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-lg bg-gradient-to-r from-teal-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">Medical Information</span>
               </div>
-              <span className="font-semibold text-foreground">Medical Information</span>
             </AccordionTrigger>
-            <AccordionContent className={cardClass}>
+            <AccordionContent className="px-6 pb-6 pt-2">
               <MedicalSection form={form} isEditing={isEditing} />
             </AccordionContent>
           </AccordionItem>
-
-          {/* (Treatment moved into Medical Information; daily intake removed) */}
         </Accordion>
 
         <ProfileActions

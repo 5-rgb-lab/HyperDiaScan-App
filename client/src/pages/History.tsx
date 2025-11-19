@@ -209,12 +209,12 @@ export default function History() {
       <RecordDetailsDialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setSelectedRecord(null); }} selectedRecord={selectedRecord} />
 
       {/* Page content */}
-      <div className="space-y-6">
-        <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+      <div className="space-y-4 sm:space-y-6 pb-4 sm:pb-6">
+        <div className="text-center space-y-2 p-4 sm:p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border mx-2 sm:mx-0">
+          <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Scan History & Analytics
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 px-2">
             Review your past food scans, health assessments, and nutrition analytics
           </p>
         </div>
@@ -224,7 +224,7 @@ export default function History() {
         {healthTips.length > 0 && <HealthTipsCard tips={healthTips} />}
 
         {loading ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-12 sm:py-16 text-gray-500 dark:text-gray-400">
             Loading your scan history...
           </div>
         ) : (

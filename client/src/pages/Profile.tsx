@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { userProfileSchema } from '@shared/schema';
 import { useAdmin } from '@/admin/context/AdminContext';
 import { useLocation } from 'wouter';
+import { User } from 'lucide-react';
 
 export default function Profile() {
   const { user, userProfile, updateProfile, signOut } = useAuth();
@@ -68,24 +69,35 @@ export default function Profile() {
         </DialogContent>
       </Dialog>
 
-      <div className="text-center space-y-2 p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" data-testid="text-profile-title">
+      <div className="text-center space-y-2 p-4 sm:p-6 
+                      bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 
+                      rounded-lg border mx-2 sm:mx-0">
+        <h1 className="text-2xl sm:text-3xl font-extrabold 
+                      bg-gradient-to-r from-primary to-secondary 
+                      bg-clip-text text-transparent">
           User Profile
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 px-2">
           Manage your account settings and health information
         </p>
-        {/* Admin entry button (only visible to admins) */}
+
+        {/* Admin entry button */}
         {adminLoading ? null : isAdmin ? (
           <div className="mt-4">
-            <Button variant="outline" onClick={() => setLocation('/admin')}>
+            <Button
+              variant="outline"
+              onClick={() => setLocation('/admin')}
+              className="border-primary/40 text-primary hover:bg-primary/10 backdrop-blur-sm"
+            >
               Open Admin Dashboard
             </Button>
           </div>
         ) : null}
       </div>
 
-      <div id="profile-form" className="max-w-4xl mx-auto p-4 bg-white/80 dark:bg-gray-800/80 rounded-lg shadow">
+
+
+      <div id="profile-form" className="w-full">
         {user ? (
           <UserProfile 
             user={profileUser!}
@@ -93,7 +105,9 @@ export default function Profile() {
             onSignOut={signOut}
           />
         ) : (
-          <div className="p-6 text-center text-muted-foreground">Please sign in to view and edit your profile.</div>
+          <div className="p-8 text-center text-muted-foreground bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
+            Please sign in to view and edit your profile.
+          </div>
         )}
       </div>
     </div>

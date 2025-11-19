@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { userProfileSchema } from '@shared/schema';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { PenLine } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile'
 import { analyzeImageFile } from '@/lib/analyzeImage'
@@ -357,23 +357,63 @@ export default function Scanner() {
                 onAnalyze={handleAnalyze} 
               />
             ) : (
-              <div className="grid gap-4">
-                <div className="flex gap-2">
-                  
+              <Card className="w-full border-0 shadow-xl bg-white dark:bg-gray-800">
+                <CardContent className="p-8">
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                      Choose Analysis Method
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Scan a nutrition label or enter values manually
+                    </p>
+                  </div>
 
-                  <Card className="p-6 space-y-4 flex-1">
-                    <div className="flex items-center gap-2">
-                      <PenLine className="w-5 h-5 text-primary" />
-                      <h3 className="text-lg font-semibold">Manual Nutrition Input</h3>
-                    </div>
-                    <p className="text-muted-foreground text-sm">Enter nutritional values manually to analyze your food item.</p>
-                    <Button onClick={handleStartEmpty} className="w-full">Start Manual Entry</Button>
-                    <Button className="w-full" onClick={openFilePicker}>
-                    {isMobile ? 'Take Photo' : 'Upload Image'}
-                  </Button>
-                  </Card>
-                </div>
-              </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {/* Take Photo / Upload Image */}
+                    <button
+                      onClick={openFilePicker}
+                      className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-blue-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-blue-50 via-purple-50 to-teal-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-teal-950/30"
+                    >
+                      <div className="flex flex-col items-center gap-4 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent mb-1">
+                            {isMobile ? 'Take Photo' : 'Upload Image'}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            AI-powered OCR analysis
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Manual Entry */}
+                    <button
+                      onClick={handleStartEmpty}
+                      className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-purple-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50 dark:from-purple-950/30 dark:via-teal-950/30 dark:to-blue-950/30"
+                    >
+                      <div className="flex flex-col items-center gap-4 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 via-teal-600 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <PenLine className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 bg-clip-text text-transparent mb-1">
+                            Manual Entry
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Enter nutrition values
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </>
         )}
@@ -419,34 +459,42 @@ export default function Scanner() {
                   />
                 )}
 
-            <div className="flex gap-4">
-              <button
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Button
                 onClick={() => {
                   setScannedData(null)
                   setHealthResult(null)
                   setCurrentFoodName("")
                   setIsImageMode(false)
                 }}
-                className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                className="h-12 bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 font-semibold"
                 data-testid="button-scan-another"
               >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
                 Scan Another Item
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSaveToHistory}
-                className="flex-1 py-2 px-4 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
                 data-testid="button-save-to-history"
                 disabled={saving}
               >
                 {saving ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-secondary-foreground" />
+                    <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-white" />
                     Saving...
                   </span>
                 ) : (
-                  'Save to History'
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Save to History
+                  </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         )}
