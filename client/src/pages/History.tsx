@@ -1,32 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { ScanHistory, RecordDetailsDialog, HistoryAnalytics, HealthTipsCard } from '@/components/health';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RecordDetailsDialog, HistoryAnalytics, HealthTipsCard, UserHistoryTab, AllScanHistoryTab } from '@/components/health';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { subscribeToUserScanHistory, deleteScanRecord } from '@/lib/firestore';
-import { Calendar, Heart, Target, Shield, Star, Activity, PieChart as PieChartIcon, BarChart3, TrendingUp } from 'lucide-react';
+import { subscribeToUserScanHistory, subscribeToAllScanHistory, deleteScanRecord } from '@/lib/firestore';
+import { Heart, Target, Shield, Star, Activity } from 'lucide-react';
 import { subscribeToUserProfile } from '@/lib/firestore';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
-// Updated ScanRecord type
 interface ScanRecord {
   id: string;
-  date: string; // human-readable (Asia/Manila)
+  date: string;
   condition: 'diabetes' | 'hypertension';
   prediction: 'safe' | 'risky';
   reasoning?: string;
   foodName?: string;
-  nutritionData: Record<string, number>; // dynamic nutrients
+  nutritionData: Record<string, number>;
   imageUrl?: string;
+  userId?: string;
 }
 
 export default function History() {
   const { user } = useAuth();
-  const [records, setRecords] = useState<ScanRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userRecords, setUserRecords] = useState<ScanRecord[]>([]);
+  const [allRecords, setAllRecords] = useState<ScanRecord[]>([]);
+  const [userLoading, setUserLoading] = useState(true);
+  const [allLoading, setAllLoading] = useState(true);
   const [selectedRecord, setSelectedRecord] = useState<ScanRecord | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Analytics state (moved from Home)
   const [dailyStats, setDailyStats] = useState({
     scansToday: 0,
     safeScans: 0,
@@ -34,13 +34,11 @@ export default function History() {
     totalScans: 0,
   });
 
-  // Health tips state (moved from Home)
   const [currentTip, setCurrentTip] = useState(0);
   const [healthTips, setHealthTips] = useState<Array<{ icon: any; color: string; title: string; content: string }>>(
     []
   );
 
-  // Icons and colors for tips
   const tipStyles = [
     { icon: Heart, color: 'from-red-500 to-pink-500', title: '' },
     { icon: Target, color: 'from-blue-500 to-indigo-500', title: '' },
@@ -80,62 +78,63 @@ export default function History() {
     return isNaN(n) ? 0 : n;
   };
 
+  const mapRecord = (r: any): ScanRecord => {
+    const id = r.id ?? r.docId ?? r._id ?? '';
+    const rawTimestamp = r.timestamp ?? r.createdAt ?? r.date ?? r.time ?? null;
+
+    const nutritionRaw = r.nutritionData ?? r.nutrition ?? r.nutrition_info ?? {};
+    const nutritionData: Record<string, number> = {};
+    for (const [key, value] of Object.entries(nutritionRaw)) {
+      const n = toNumber(value);
+      if (n !== 0) nutritionData[key] = n;
+    }
+
+    const condition = (r.condition ?? r.disease ?? 'diabetes') as 'diabetes' | 'hypertension';
+
+    const rawPrediction =
+      typeof r.prediction === 'object' && r.prediction !== null
+        ? r.prediction
+        : { prediction: r.prediction ?? 'safe' };
+
+    let prediction: ScanRecord['prediction'] = 'safe';
+    const predStr = String(rawPrediction.prediction ?? 'safe').toLowerCase();
+    if (predStr === 'risky') prediction = 'risky';
+
+    const reasoning = String(rawPrediction.reasoning ?? r.reasoning ?? '').trim();
+    const foodName = r.foodName ?? r.name ?? r.label ?? undefined;
+    const date = formatTimestamp(rawTimestamp ?? r.createdAt ?? r.timestamp ?? new Date());
+
+    return {
+      id,
+      date,
+      condition,
+      prediction,
+      foodName,
+      reasoning,
+      nutritionData,
+      imageUrl: r.imageDataUrl ?? r.imageUrl ?? r.image_url ?? (r.image && (r.image.url || r.image.path)) ?? undefined,
+      userId: r.userId,
+    };
+  };
+
   useEffect(() => {
     if (!user) {
-      setRecords([]);
-      setLoading(false);
+      setUserRecords([]);
+      setUserLoading(false);
       return;
     }
 
     const unsubscribe = subscribeToUserScanHistory(user.uid, (rawRecords: any[] | null) => {
       try {
         if (!rawRecords || rawRecords.length === 0) {
-          setRecords([]);
-          setLoading(false);
+          setUserRecords([]);
+          setUserLoading(false);
           return;
         }
 
-        const mapped: ScanRecord[] = rawRecords.map((r: any) => {
-          const id = r.id ?? r.docId ?? r._id ?? '';
-          const rawTimestamp = r.timestamp ?? r.createdAt ?? r.date ?? r.time ?? null;
+        const mapped = rawRecords.map(mapRecord);
+        setUserRecords(mapped);
 
-          const nutritionRaw = r.nutritionData ?? r.nutrition ?? r.nutrition_info ?? {};
-          const nutritionData: Record<string, number> = {};
-          for (const [key, value] of Object.entries(nutritionRaw)) {
-            const n = toNumber(value);
-            if (n !== 0) nutritionData[key] = n;
-          }
-
-          const condition = (r.condition ?? r.disease ?? 'diabetes') as 'diabetes' | 'hypertension';
-
-          const rawPrediction =
-            typeof r.prediction === 'object' && r.prediction !== null
-              ? r.prediction
-              : { prediction: r.prediction ?? 'safe' };
-
-          let prediction: ScanRecord['prediction'] = 'safe';
-          const predStr = String(rawPrediction.prediction ?? 'safe').toLowerCase();
-          if (predStr === 'risky') prediction = 'risky';
-
-          const reasoning = String(rawPrediction.reasoning ?? r.reasoning ?? '').trim();
-          const foodName = r.foodName ?? r.name ?? r.label ?? undefined;
-          const date = formatTimestamp(rawTimestamp ?? r.createdAt ?? r.timestamp ?? new Date());
-
-          return {
-            id,
-            date,
-            condition,
-            prediction,
-            foodName,
-            reasoning,
-            nutritionData,
-            imageUrl: r.imageDataUrl ?? r.imageUrl ?? r.image_url ?? (r.image && (r.image.url || r.image.path)) ?? undefined,
-          };
-        });
-
-        setRecords(mapped);
-
-        // Calculate daily stats
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -150,18 +149,39 @@ export default function History() {
 
         setDailyStats({ scansToday, safeScans, riskyScans, totalScans });
       } catch (err) {
-        console.error('Error mapping scan history records:', err);
-        setRecords([]);
+        console.error('Error mapping user scan history records:', err);
+        setUserRecords([]);
         setDailyStats({ scansToday: 0, safeScans: 0, riskyScans: 0, totalScans: 0 });
       } finally {
-        setLoading(false);
+        setUserLoading(false);
       }
     });
 
     return unsubscribe;
   }, [user]);
 
-  // Subscribe to user profile for tips
+  useEffect(() => {
+    const unsubscribe = subscribeToAllScanHistory((rawRecords: any[] | null) => {
+      try {
+        if (!rawRecords || rawRecords.length === 0) {
+          setAllRecords([]);
+          setAllLoading(false);
+          return;
+        }
+
+        const mapped = rawRecords.map(mapRecord);
+        setAllRecords(mapped);
+      } catch (err) {
+        console.error('Error mapping all scan history records:', err);
+        setAllRecords([]);
+      } finally {
+        setAllLoading(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setHealthTips([]);
@@ -208,7 +228,6 @@ export default function History() {
     <>
       <RecordDetailsDialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setSelectedRecord(null); }} selectedRecord={selectedRecord} />
 
-      {/* Page content */}
       <div className="space-y-4 sm:space-y-6 pb-4 sm:pb-6">
         <div className="text-center space-y-2 p-4 sm:p-6 bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-lg border mx-2 sm:mx-0">
           <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -219,21 +238,43 @@ export default function History() {
           </p>
         </div>
 
-        {dailyStats.totalScans > 0 && <HistoryAnalytics dailyStats={dailyStats} records={records} />}
+        {dailyStats.totalScans > 0 && <HistoryAnalytics dailyStats={dailyStats} records={userRecords} />}
 
         {healthTips.length > 0 && <HealthTipsCard tips={healthTips} />}
 
-        {loading ? (
-          <div className="text-center py-12 sm:py-16 text-gray-500 dark:text-gray-400">
-            Loading your scan history...
-          </div>
-        ) : (
-          <ScanHistory
-            records={records}
-            onViewDetails={handleViewDetails}
-            onDeleteRecord={handleDeleteRecord}
-          />
-        )}
+        <Tabs defaultValue="user" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted">
+            <TabsTrigger 
+              value="user" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-white"
+            >
+              User History
+            </TabsTrigger>
+            <TabsTrigger 
+              value="all"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-white"
+            >
+              All Scan History
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="user">
+            <UserHistoryTab
+              records={userRecords}
+              loading={userLoading}
+              onViewDetails={handleViewDetails}
+              onDeleteRecord={handleDeleteRecord}
+            />
+          </TabsContent>
+
+          <TabsContent value="all">
+            <AllScanHistoryTab
+              records={allRecords}
+              loading={allLoading}
+              onViewDetails={handleViewDetails}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </>
   );

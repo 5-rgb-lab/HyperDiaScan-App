@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Apple, Flame } from "lucide-react";
+import { Apple, Flame, Sparkles } from "lucide-react";
 import { UserProfile } from "@shared/schema";
 
 interface NutritionFormProps {
@@ -56,7 +56,6 @@ export default function NutritionForm({
 
   useEffect(() => {
     if (initialData) {
-      // Reset form with initial data
       const formData = {
         foodName: initialData.foodName || "",
         calories: Number(initialData.calories) || 0,
@@ -75,13 +74,12 @@ export default function NutritionForm({
         servingsPerContainer: Number((initialData as any).servingsPerContainer) || 0,
         condition: userCondition,
       };
-      form.reset(formData); // Use reset instead of setting values individually
+      form.reset(formData);
     }
   }, [initialData, form, userCondition]);
 
   const onSubmit = async (data: AnalyzeFoodRequest) => {
     try {
-      // Ensure all numeric fields are numbers and not strings
       const formattedData: AnalyzeFoodRequest = {
         ...data,
         calories: Number(data.calories),
@@ -101,7 +99,6 @@ export default function NutritionForm({
         condition: data.condition || userCondition,
       };
 
-
       if (!onAnalyze) throw new Error("onAnalyze function not provided!");
       await onAnalyze(formattedData);
     } catch (error) {
@@ -115,64 +112,74 @@ export default function NutritionForm({
   };
 
   return (
-    <Card className="border border-border shadow-sm">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Apple className="w-5 h-5 text-blue-500" />
-          <CardTitle className="text-lg text-foreground">
-            Review & Edit Nutrition Facts
-          </CardTitle>
+    <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-blue-950/20 dark:to-purple-950/20">
+      <CardHeader className="space-y-1 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-lg">
+            <Apple className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Review & Edit Nutrition Facts
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Verify extracted values and make any corrections
+            </p>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        {/* ✅ Use FormProvider so FormField has access to useFormContext */}
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Product Name Field */}
             <FormField
               control={form.control}
               name="foodName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Apple className="w-4 h-4 text-blue-500" />
+                  <FormLabel className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Apple className="w-4 h-4 text-primary" />
                     Product Name
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="e.g., Greek Yogurt" />
+                    <Input 
+                      {...field} 
+                      placeholder="e.g., Greek Yogurt"
+                      className="h-12 border-2 focus:border-primary transition-colors"
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            <Separator />
+            <Separator className="my-4 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
-            {/* Nutrition Fields */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Flame className="w-4 h-4 text-blue-500" />
-                <h3 className="text-sm font-medium text-foreground">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-gradient-to-r from-primary to-secondary">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow">
+                  <Flame className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-base font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                   Nutrition Information
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { name: "calories", label: "Calories" },
-                  { name: "carbohydrates", label: "Carbohydrates (g)" },
-                    { name: "totalSugars", label: "Total Sugars (g)" },
-                    { name: "addedSugars", label: "Added Sugars (g)" },
-                  { name: "protein", label: "Protein (g)" },
-                  { name: "fat", label: "Total Fat (g)" },
-                    { name: "saturatedFat", label: "Saturated Fat (g)" },
-                    { name: "transFat", label: "Trans Fat (g)" },
-                  { name: "sodium", label: "Sodium (mg)" },
-                    { name: "potassium", label: "Potassium (mg)" },
-                    { name: "cholesterol", label: "Cholesterol (mg)" },
-                  { name: "fiber", label: "Dietary Fiber (g)" },
-                    { name: "servingSize", label: "Serving Size (text)" },
-                    { name: "servingsPerContainer", label: "Servings / Container" },
+                  { name: "calories", label: "Calories", unit: "kcal", icon: "🔥" },
+                  { name: "carbohydrates", label: "Carbohydrates", unit: "%RENI%", icon: "🌾" },
+                  { name: "totalSugars", label: "Total Sugars", unit: "%RENI%", icon: "🍬" },
+                  { name: "addedSugars", label: "Added Sugars", unit: "%RENI%", icon: "🧁" },
+                  { name: "protein", label: "Protein", unit: "%RENI%", icon: "🥩" },
+                  { name: "fat", label: "Total Fat", unit: "%RENI%", icon: "🧈" },
+                  { name: "saturatedFat", label: "Saturated Fat", unit: "%RENI%", icon: "🥓" },
+                  { name: "transFat", label: "Trans Fat", unit: "%RENI%", icon: "⚠️" },
+                  { name: "sodium", label: "Sodium", unit: "%RENI%", icon: "🧂" },
+                  { name: "potassium", label: "Potassium", unit: "%RENI%", icon: "🍌" },
+                  { name: "cholesterol", label: "Cholesterol", unit: "%RENI%", icon: "💊" },
+                  { name: "fiber", label: "Dietary Fiber", unit: "%RENI%", icon: "🥬" },
+                  { name: "servingSize", label: "Serving Size", unit: "text", icon: "📏" },
+                  { name: "servingsPerContainer", label: "Servings / Container", unit: "count", icon: "📦" },
                 ].map((fieldData) => (
                   <FormField
                     key={fieldData.name}
@@ -180,13 +187,22 @@ export default function NutritionForm({
                     name={fieldData.name as any}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{fieldData.label}</FormLabel>
+                        <FormLabel className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <span className="text-base">{fieldData.icon}</span>
+                          <span>{fieldData.label}</span>
+                          {fieldData.unit !== "text" && fieldData.unit !== "count" && (
+                            <span className="text-xs text-muted-foreground">({fieldData.unit})</span>
+                          )}
+                        </FormLabel>
                         <FormControl>
-                            {/* Serving size is textual; other fields are numeric */}
-                            {fieldData.name === 'servingSize' ? (
-                              // cast to any to avoid overly-wide react-hook-form union types
-                              <Input {...(field as any)} placeholder="e.g., 1 cup (240g)" />
-                            ) : (
+                          {fieldData.unit === 'text' ? (
+                            <Input 
+                              {...(field as any)} 
+                              placeholder="e.g., 1 cup (240g)"
+                              className="h-11 border-2 focus:border-primary transition-colors"
+                            />
+                          ) : (
+                            <div className="relative">
                               <Input
                                 type="number"
                                 step="any"
@@ -198,9 +214,16 @@ export default function NutritionForm({
                                   const numValue = value === "" ? 0 : parseFloat(value) || 0;
                                   field.onChange(Math.max(0, numValue));
                                 }}
+                                className="h-11 border-2 focus:border-primary transition-colors pr-16"
+                                placeholder="0"
                               />
-                            )}
-
+                              {fieldData.unit !== "count" && fieldData.unit !== "kcal" && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+                                  {fieldData.unit}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </FormControl>
                       </FormItem>
                     )}
@@ -209,10 +232,13 @@ export default function NutritionForm({
               </div>
             </div>
 
+            <Separator className="my-4 bg-gradient-to-r from-transparent via-secondary/30 to-transparent" />
+
             <Button
               type="submit"
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+              className="w-full h-14 text-base font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 hover:from-blue-700 hover:via-purple-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
             >
+              <Sparkles className="w-5 h-5 mr-2" />
               Analyze Food Safety
             </Button>
           </form>
