@@ -26,13 +26,11 @@ export function buildPrompt(nutrition: AnalyzeFoodRequest, user: UserProfile): s
       1️⃣ **Safety Evaluation ("Safe | "Risky)**  
       Determine safety based ONLY on RENI% values using these rules:  
       - Limit nutrients: **Total Fat, Saturated Fat, Sodium, Total Sugars**  
-      - High: >= 20% RENI  
-      - Moderate (Good Source): 10–19% RENI  
-      - Low: <= 5% RENI  
+      - Low: ≤5% RENI → safe  
+      - High: >5% RENI → risky
       Safety logic:  
-      - If ANY limit nutrient >=20% RENI → "Potentially unsafe"  
-      - If TWO OR MORE limit nutrients >=20% RENI → "Unsafe for regular consumption"  
-      - If ALL limit nutrients <20% RENI → "Generally safe"
+      - If ANY limit nutrient >5% RENI → "Risky"  
+      - If ALL limit nutrients ≤5% RENI → "Safe for regular consumption"
 
       2️⃣ **User Health Impact**  
       After the safety sentence, explain how this food affects the user's:  
@@ -72,7 +70,7 @@ export function buildPrompt(nutrition: AnalyzeFoodRequest, user: UserProfile): s
       Sodium: ${nutrition.sodium}
       Sugars: ${nutrition.totalSugars ?? "?"}
       Fiber: ${nutrition.fiber}
-
+      Potassium: ${nutrition.potassium ?? "?"}
       ==========================
       📌 **OUTPUT FORMAT**
       ==========================
