@@ -15,44 +15,51 @@ export function fallbackAnalysis(data: AnalyzeFoodRequest): HealthPrediction {
   const reasons: string[] = []
   let isRisky = false
 
-  if (sodium >= 460) {
+  // RENI thresholds for limit nutrients (based on %RENI)
+  const HIGH_THRESHOLD = 20 // ≥20% RENI is high
+  const MODERATE_THRESHOLD = 10 // 10–19% RENI is moderate
+  const LOW_THRESHOLD = 5 // ≤5% RENI is low
+
+  // Sodium check
+  if (sodium >= HIGH_THRESHOLD) {
     isRisky = true
-    reasons.push(`High sodium content (${sodium}mg) exceeds 20% DV per serving`)
+    reasons.push(`High sodium content (${sodium}% RENI) exceeds 20% RENI per serving`)
   }
 
+  // Carbohydrates check for diabetes
   if (condition === 'diabetes' || condition === 'both') {
-    if (carbohydrates > 60) {
+    if (carbohydrates >= HIGH_THRESHOLD) {
       isRisky = true
-      reasons.push(`Carbohydrate content (${carbohydrates}g) exceeds recommended meal range of 30-60g`)
-    } else if (carbohydrates > 30 && servingSize?.toLowerCase().includes('snack')) {
+      reasons.push(`High carbohydrate content (${carbohydrates}% RENI) may impact blood sugar`)
+    } else if (carbohydrates >= MODERATE_THRESHOLD && servingSize?.toLowerCase().includes('snack')) {
       isRisky = true
-      reasons.push(`Carbohydrate content (${carbohydrates}g) exceeds recommended snack range of 15-30g`)
+      reasons.push(`Moderate carbohydrate content (${carbohydrates}% RENI) exceeds snack recommendation`)
     }
   }
 
-  if (addedSugars && addedSugars > 10) {
+  // Added sugars check
+  if (addedSugars && addedSugars >= HIGH_THRESHOLD) {
     isRisky = true
-    reasons.push(`High added sugars (${addedSugars}g) exceeds 10g per serving threshold`)
+    reasons.push(`High added sugars (${addedSugars}% RENI) exceeds recommended limit`)
   }
 
-  if (saturatedFat && calories) {
-    const satFatCalories = saturatedFat * 9
-    const satFatPercentage = (satFatCalories / calories) * 100
-    if (satFatPercentage > 10) {
-      isRisky = true
-      reasons.push(`Saturated fat (${saturatedFat}g) exceeds 10% of calories`)
-    }
+  // Saturated fat check
+  if (saturatedFat && saturatedFat >= HIGH_THRESHOLD) {
+    isRisky = true
+    reasons.push(`Saturated fat (${saturatedFat}% RENI) exceeds 20% RENI per serving`)
   }
 
+  // Hypertension-specific sodium check
   if (condition === 'hypertension' || condition === 'both') {
-    if (sodium > 1500 / 3) {
+    if (sodium >= HIGH_THRESHOLD) {
       isRisky = true
-      reasons.push(`Sodium content (${sodium}mg) exceeds recommended per-meal limit for hypertension`)
+      reasons.push(`Sodium content (${sodium}% RENI) exceeds recommended limit for hypertension`)
     }
   }
 
-  if (potassium) {
-    reasons.push(`Contains ${potassium}mg potassium (beneficial for blood pressure control if no kidney issues)`)
+  // Potassium benefit
+  if (potassium && potassium > 0) {
+    reasons.push(`Contains ${potassium}% RENI potassium (beneficial for blood pressure control if no kidney issues)`)
   }
 
   if (isRisky) {
@@ -61,9 +68,9 @@ export function fallbackAnalysis(data: AnalyzeFoodRequest): HealthPrediction {
       reasoning: reasons.join('. '),
       healthTip: [
         { content: 'Choose lower-sodium alternatives when available.' },
-        { content: condition?.includes('diabetes') ? 'Monitor total carbohydrates carefully.' : 'Watch portion sizes.' },
+        { content: condition?.includes('diabetes') ? 'Monitor carbohydrate intake carefully.' : 'Watch portion sizes.' },
+        { content: 'Balance meals with fiber-rich vegetables when possible.' },
         { content: 'Consider splitting portions for better nutrient management.' },
-        { content: 'Balance with fiber-rich vegetables when possible.' },
         { content: 'Track daily totals of key nutrients (sodium, carbs, sugars).' },
       ],
     }
@@ -71,7 +78,7 @@ export function fallbackAnalysis(data: AnalyzeFoodRequest): HealthPrediction {
 
   return {
     prediction: 'Safe',
-    reasoning: `Within recommended limits: ${reasons.length ? reasons.join('. ') : 'all nutrient levels acceptable'}`,
+    reasoning: `Within recommended RENI limits: ${reasons.length ? reasons.join('. ') : 'all nutrient levels acceptable'}`,
     healthTip: [
       { content: 'Continue monitoring portion sizes.' },
       { content: 'Maintain balanced nutrient intake across meals.' },
