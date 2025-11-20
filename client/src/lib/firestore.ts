@@ -82,6 +82,31 @@ export const getUserScanHistory = async (userId: string): Promise<ScanRecord[]> 
   }
 };
 
+export const getAllScanHistory = async (): Promise<ScanRecord[]> => {
+  try {
+    const scansCollection = collection(db, 'scanRecords');
+    const q = query(
+      scansCollection,
+      orderBy('timestamp', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const scanRecords: ScanRecord[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      scanRecords.push({
+        id: doc.id,
+        ...doc.data(),
+      } as ScanRecord);
+    });
+    
+    return scanRecords;
+  } catch (error) {
+    console.error('Error fetching all scan history:', error);
+    throw error;
+  }
+};
+
 export const deleteScanRecord = async (recordId: string): Promise<void> => {
   try {
     await deleteDoc(doc(db, 'scanRecords', recordId));
@@ -129,6 +154,27 @@ export const subscribeToUserScanHistory = (
   const q = query(
     scansCollection,
     where('userId', '==', userId),
+    orderBy('timestamp', 'desc')
+  );
+
+  return onSnapshot(q, (querySnapshot) => {
+    const scanRecords: ScanRecord[] = [];
+    querySnapshot.forEach((doc) => {
+      scanRecords.push({
+        id: doc.id,
+        ...doc.data(),
+      } as ScanRecord);
+    });
+    onUpdate(scanRecords);
+  });
+};
+
+export const subscribeToAllScanHistory = (
+  onUpdate: (records: ScanRecord[]) => void
+): Unsubscribe => {
+  const scansCollection = collection(db, 'scanRecords');
+  const q = query(
+    scansCollection,
     orderBy('timestamp', 'desc')
   );
 
