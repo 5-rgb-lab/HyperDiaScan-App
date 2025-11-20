@@ -1,46 +1,35 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { UserCircle, Ruler, Scale, Activity, Calendar } from "lucide-react"
+import { UserCircle, Ruler, Scale, Activity, Calendar, Globe2 } from "lucide-react"
+import { analyzeBMI, type BMIStandard } from "@/lib/bmiUtils"
 
-function BMIDisplay({ height, weight }: { height: number; weight: number }) {
-  const bmi = height > 0 ? (weight / ((height / 100) ** 2)).toFixed(1) : "0.0";
-  const bmiNum = parseFloat(bmi);
-
-  const category =
-    bmiNum < 18.5
-      ? "Underweight"
-      : bmiNum < 25
-      ? "Normal weight"
-      : bmiNum < 30
-      ? "Overweight"
-      : "Obese";
-
-  const categoryColor =
-    category === "Underweight"
-      ? "text-blue-500"
-      : category === "Normal weight"
-      ? "text-green-500"
-      : category === "Overweight"
-      ? "text-orange-500"
-      : "text-red-500";
+function BMIDisplay({ height, weight, standard }: { height: number; weight: number; standard: BMIStandard }) {
+  const result = analyzeBMI(height, weight, standard);
 
   return (
     <div className="p-4 rounded-lg border border-border bg-card shadow-sm col-span-2">
-      <div className="flex items-center gap-2 mb-3">
-        <Activity className="w-4 h-4 text-purple-500" />
-        <h3 className="text-sm font-semibold text-foreground">
-          Body Mass Index (BMI)
-        </h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-purple-500" />
+          <h3 className="text-sm font-semibold text-foreground">
+            Body Mass Index (BMI)
+          </h3>
+        </div>
+        <span className="text-xs px-2 py-1 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium">
+          {standard} Standard
+        </span>
       </div>
       <div className="space-y-1 text-sm">
         <p>
           <strong className="text-foreground">BMI:</strong>{" "}
-          <span className="font-medium text-purple-600">{bmi}</span>
+          <span className="font-medium text-purple-600">
+            {result.bmi > 0 ? result.bmi.toFixed(1) : "0.0"}
+          </span>
         </p>
         <p>
           <strong className="text-foreground">Category:</strong>{" "}
-          <span className={`font-semibold ${categoryColor}`}>{category}</span>
+          <span className={`font-semibold ${result.categoryColor}`}>{result.category}</span>
         </p>
       </div>
     </div>
@@ -50,6 +39,7 @@ function BMIDisplay({ height, weight }: { height: number; weight: number }) {
 export default function DemographicSection({ form, isEditing }: { form: any; isEditing: boolean }) {
   const height = Number(form.watch("demographics.heightCm"));
   const weight = Number(form.watch("demographics.weightKg"));
+  const bmiStandard = form.watch("demographics.bmiStandard") || "WHO";
 
   return (
     <div className="p-4 space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
@@ -178,8 +168,34 @@ export default function DemographicSection({ form, isEditing }: { form: any; isE
     )}
   />
 
+      {/* BMI Standard */}
+      <FormField
+        control={form.control}
+        name="demographics.bmiStandard"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="flex items-center gap-2 text-sm font-medium">
+              <Globe2 className="w-4 h-4 text-green-500" />
+              BMI Standard
+            </FormLabel>
+            <Select defaultValue={field.value || "WHO"} onValueChange={field.onChange} disabled={!isEditing}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select BMI standard" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="WHO">WHO (World Health Organization)</SelectItem>
+                <SelectItem value="Asian">Asian (Modified for Asian populations)</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* BMI Display */}
-      <BMIDisplay height={height} weight={weight} />
+      <BMIDisplay height={height} weight={weight} standard={bmiStandard as BMIStandard} />
     </div>
   )
 }
