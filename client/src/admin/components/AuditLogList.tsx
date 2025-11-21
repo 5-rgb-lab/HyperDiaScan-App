@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,24 +30,34 @@ export default function AuditLogList() {
   const [selectedCategories, setSelectedCategories] = useState<AuditCategory[]>([]);
 
   useEffect(() => {
-    let q = query(
-      collection(db, 'auditLogs'),
-      orderBy('timestamp', 'desc')
-    );
+    // Build base query ordered by timestamp desc
+    const q: any = query(collection(db, 'auditLogs'), orderBy('timestamp', 'desc'));
 
-    if (selectedCategories.length > 0) {
-      q = query(q, where('category', 'in', selectedCategories));
-    }
+    // We intentionally fetch ordered by timestamp and apply category filtering client-side
+    // to avoid Firestore composite index requirements.
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const logs = snapshot.docs.map(doc => {
+    const unsubscribe = onSnapshot(q, (snapshot: any) => {
+      let docs = snapshot.docs;
+      // If categories are selected, filter client-side to avoid Firestore composite index requirements
+      if (selectedCategories.length > 0) {
+        docs = docs.filter((d: any) => selectedCategories.includes(d.data().category));
+      }
+      const logs = docs.map((doc: any) => {
         const data = doc.data();
+        // Support Firestore Timestamp and ISO/string timestamps
+        const rawTs = data.timestamp;
+        let ts: Date | undefined = undefined;
+        if (rawTs) {
+          if (typeof (rawTs as any).toDate === 'function') ts = (rawTs as any).toDate();
+          else ts = new Date(rawTs as any);
+        }
+
         return {
           userId: data.userId,
           category: data.category,
           action: data.action,
           description: data.description,
-          timestamp: data.timestamp?.toDate(),
+          timestamp: ts,
           status: data.status,
           severity: data.severity,
           metadata: data.metadata
@@ -60,7 +70,7 @@ export default function AuditLogList() {
     return unsubscribe;
   }, [selectedCategories]);
 
-  const categories: AuditCategory[] = ['auth', 'profile', 'health', 'scan', 'system'];
+  const categories: AuditCategory[] = ['auth', 'profile', 'scan'];
 
   const getCategoryColor = (category: AuditCategory) => {
     const colors = {

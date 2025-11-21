@@ -27,7 +27,7 @@ interface NutritionFormProps {
   onAnalyze: (data: AnalyzeFoodRequest, options?: { unit?: 'reni' | 'grams' }) => void;
 }
 
-export default function NutritionForm({
+export default function ReniForm({
   initialData,
   userCondition = "diabetes",
   onAnalyze,
@@ -100,7 +100,7 @@ export default function NutritionForm({
       };
 
       if (!onAnalyze) throw new Error("onAnalyze function not provided!");
-      await onAnalyze(formattedData, { unit: 'grams' });
+      await onAnalyze(formattedData, { unit: 'reni' });
     } catch (error) {
       console.error("Error analyzing food:", error);
       alert(
@@ -166,18 +166,18 @@ export default function NutritionForm({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { name: "calories", label: "Calories", unit: "kcal", icon: "🔥" },
-                  { name: "carbohydrates", label: "Carbohydrates", unit: "g", icon: "🌾" },
-                  { name: "totalSugars", label: "Total Sugars", unit: "g", icon: "🍬" },
-                  { name: "addedSugars", label: "Added Sugars", unit: "g", icon: "🧁" },
-                  { name: "protein", label: "Protein", unit: "g", icon: "🥩" },
-                  { name: "fat", label: "Total Fat", unit: "g", icon: "🧈" },
-                  { name: "saturatedFat", label: "Saturated Fat", unit: "g", icon: "🥓" },
-                  { name: "transFat", label: "Trans Fat", unit: "g", icon: "⚠️" },
-                  { name: "sodium", label: "Sodium", unit: "mg", icon: "🧂" },
-                  { name: "potassium", label: "Potassium", unit: "mg", icon: "🍌" },
-                  { name: "cholesterol", label: "Cholesterol", unit: "mg", icon: "💊" },
-                  { name: "fiber", label: "Dietary Fiber", unit: "g", icon: "🥬" },
+                  { name: "calories", label: "Calories", unit: "%", icon: "🔥" },
+                  { name: "carbohydrates", label: "Carbohydrates", unit: "%", icon: "🌾" },
+                  { name: "totalSugars", label: "Total Sugars", unit: "%", icon: "🍬" },
+                  { name: "addedSugars", label: "Added Sugars", unit: "%", icon: "🧁" },
+                  { name: "protein", label: "Protein", unit: "%", icon: "🥩" },
+                  { name: "fat", label: "Total Fat", unit: "%", icon: "🧈" },
+                  { name: "saturatedFat", label: "Saturated Fat", unit: "%", icon: "🥓" },
+                  { name: "transFat", label: "Trans Fat", unit: "%", icon: "⚠️" },
+                  { name: "sodium", label: "Sodium", unit: "%", icon: "🧂" },
+                  { name: "potassium", label: "Potassium", unit: "%", icon: "🍌" },
+                  { name: "cholesterol", label: "Cholesterol", unit: "%", icon: "💊" },
+                  { name: "fiber", label: "Dietary Fiber", unit: "%", icon: "🥬" },
                   { name: "servingSize", label: "Serving Size", unit: "text", icon: "📏" },
                   { name: "servingsPerContainer", label: "Servings / Container", unit: "count", icon: "📦" },
                 ].map((fieldData) => (
