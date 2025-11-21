@@ -3,3 +3,5 @@ export { default as NutritionForm } from './NutritionForm'
 export { default as ScannerInstructions } from './ScannerInstructions'
 export { default as ScannerLoadingCard } from './ScannerLoadingCard'
 export { default as ProTipCard } from './ProTipCard'
+export { default as ReniForm } from './ReniForm'
+

@@ -22,7 +22,8 @@ try {
 
 export const analyzeFood = async (
   nutritionData: AnalyzeFoodRequest,
-  userProfile: UserProfile
+  userProfile: UserProfile,
+  options?: { unit?: 'reni' | 'grams' }
 ): Promise<HealthPrediction> => {
   try {
     // Lightweight validation warnings
@@ -40,7 +41,8 @@ export const analyzeFood = async (
     if (nutritionData.sodium === undefined) missingNutrition.push('sodium')
     if (missingNutrition.length) console.warn('⚠️ Missing nutrition data fields:', missingNutrition)
 
-    const prompt = buildPrompt(nutritionData, userProfile)
+    // Build prompt depending on whether data came from RENI (%) form or grams form
+    const prompt = buildPrompt(nutritionData, userProfile, options?.unit === 'reni' ? 'reni' : 'grams')
 
     let output: string
     try {

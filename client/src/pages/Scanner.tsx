@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NutritionForm, ScannerInstructions, ScannerLoadingCard } from '@/components/scanner';
+import { NutritionForm, ReniForm, ScannerInstructions, ScannerLoadingCard } from '@/components/scanner';
 import ProTipCard from '@/components/scanner/ProTipCard';
 import { HealthAssessment, HealthAssessmentImage } from '@/components/health';
 import { NutritionData, AnalyzeFoodRequest, HealthPrediction } from '@shared/schema';
@@ -33,6 +33,7 @@ export default function Scanner() {
   const [currentCondition, setCurrentCondition] = useState('diabetes' as ('diabetes' | 'hypertension'));
   const [currentFoodName, setCurrentFoodName] = useState('' as string);
   const [loading, setLoading] = useState(false);
+  const [manualMode, setManualMode] = useState<null | 'grams' | 'reni'>(null);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false)
   const [toastInfo, setToastInfo] = useState({ title: "", description: "", variant: "default" } as {
@@ -114,6 +115,7 @@ export default function Scanner() {
   }
 
   const handleStartEmpty = () => {
+    setManualMode('grams');
     setScannedData({
       calories: 0,
       carbohydrates: 0,
@@ -133,7 +135,28 @@ export default function Scanner() {
     setHealthResult(null)
   }
 
-  const handleAnalyze = async (data: AnalyzeFoodRequest) => {
+  const handleStartEmptyWithMode = (mode: 'grams' | 'reni') => {
+    setManualMode(mode);
+    setScannedData({
+      calories: 0,
+      carbohydrates: 0,
+      protein: 0,
+      fat: 0,
+      sodium: 0,
+      fiber: 0,
+      totalSugars: 0,
+      addedSugars: 0,
+      saturatedFat: 0,
+      transFat: 0,
+      potassium: 0,
+      cholesterol: 0,
+      servingSize: '',
+      servingsPerContainer: 1,
+    })
+    setHealthResult(null)
+  }
+
+  const handleAnalyze = async (data: AnalyzeFoodRequest, options?: { unit?: 'reni' | 'grams' }) => {
     // Use a ref to track if we've already started analyzing
     const analysisStarted = loading;
     
@@ -177,7 +200,7 @@ export default function Scanner() {
 
     try {
       // Send the raw profile without modifying the condition
-      const result = await analyzeFood(data, userProfile);
+      const result = await analyzeFood(data, userProfile, options);
       setHealthResult(result);
       
       // Update scannedData with the user-edited nutrition values so HealthAssessment displays them
@@ -356,11 +379,19 @@ export default function Scanner() {
             {loading ? (
               <ScannerLoadingCard />
             ) : scannedData ? (
-              <NutritionForm 
-                initialData={scannedData} 
-                userCondition={userProfile?.primaryCondition || 'diabetes'}
-                onAnalyze={handleAnalyze} 
-              />
+              manualMode === 'reni' ? (
+                <ReniForm
+                  initialData={scannedData}
+                  userCondition={userProfile?.primaryCondition || 'diabetes'}
+                  onAnalyze={handleAnalyze}
+                />
+              ) : (
+                <NutritionForm 
+                  initialData={scannedData} 
+                  userCondition={userProfile?.primaryCondition || 'diabetes'}
+                  onAnalyze={handleAnalyze} 
+                />
+              )
             ) : (
               <Card className="w-full border-0 shadow-xl bg-white dark:bg-gray-800">
                 <CardContent className="p-8">
@@ -398,11 +429,8 @@ export default function Scanner() {
                     </button>
 
                     {/* Manual Entry */}
-                    <button
-                      onClick={handleStartEmpty}
-                      className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-purple-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50 dark:from-purple-950/30 dark:via-teal-950/30 dark:to-blue-950/30"
-                    >
-                      <div className="flex flex-col items-center gap-4 text-center">
+                    <div className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-purple-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50 dark:from-purple-950/30 dark:via-teal-950/30 dark:to-blue-950/30">
+                      <div className="flex flex-col items-center gap-4 text-center mb-4">
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 via-teal-600 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                           <PenLine className="w-8 h-8 text-white" />
                         </div>
@@ -415,7 +443,22 @@ export default function Scanner() {
                           </p>
                         </div>
                       </div>
-                    </button>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          onClick={() => handleStartEmptyWithMode('grams')}
+                          className="h-12 w-full text-base font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                        >
+                          Grams
+                        </Button>
+                        <Button
+                          onClick={() => handleStartEmptyWithMode('reni')}
+                          className="h-12 w-full text-base font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                        >
+                          RENI
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -434,6 +477,7 @@ export default function Scanner() {
                 <Button variant="outline" onClick={() => {
                   setHealthResult(null)
                   setScannedData(null)
+                  setManualMode(null)
                 }}>
                   Back to Options
                 </Button>
@@ -465,10 +509,11 @@ export default function Scanner() {
                 )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button
+                <Button
                 onClick={() => {
                   setScannedData(null)
                   setHealthResult(null)
+                  setManualMode(null)
                   setCurrentFoodName("")
                   setIsImageMode(false)
                 }}

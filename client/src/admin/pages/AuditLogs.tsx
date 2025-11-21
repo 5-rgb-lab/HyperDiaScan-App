@@ -1,11 +1,8 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AuditLogList from '@/admin/components/AuditLogList';
 import { Activity, FileText, Clock, Shield } from 'lucide-react';
 
 export default function AuditLogs() {
-  const [timeRange, setTimeRange] = useState('all');
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -59,43 +56,15 @@ export default function AuditLogs() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              {timeRange === 'all' ? 'All' : timeRange === 'today' ? 'Today' : timeRange === 'week' ? '7d' : '30d'}
+              All
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Selected filter</p>
           </CardContent>
         </Card>
       </div>
-
       <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <CardContent className="p-6">
-          <Tabs defaultValue="all" onValueChange={(value) => setTimeRange(value)}>
-            <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white">
-                All Time
-              </TabsTrigger>
-              <TabsTrigger value="today" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white">
-                Today
-              </TabsTrigger>
-              <TabsTrigger value="week" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white">
-                This Week
-              </TabsTrigger>
-              <TabsTrigger value="month" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white">
-                This Month
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="all">
-              <AuditLogList />
-            </TabsContent>
-            <TabsContent value="today">
-              <AuditLogList />
-            </TabsContent>
-            <TabsContent value="week">
-              <AuditLogList />
-            </TabsContent>
-            <TabsContent value="month">
-              <AuditLogList />
-            </TabsContent>
-          </Tabs>
+          <AuditLogList />
         </CardContent>
       </Card>
     </div>
