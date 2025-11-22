@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '../context/AdminContext';
 import { cn } from '@/lib/utils';
-
+import HyperDiaLogo from './hyperdialogo.png'; // directly relative
 interface AdminLayoutProps {
   children: ReactNode;
 }
@@ -74,10 +74,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-              <ShieldCheck className="w-8 h-8" />
+              <img src={HyperDiaLogo} alt="HyperDiaLogo" className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Admin Panel</h1>
+              <h1 className="text-2xl font-bold">Admin</h1>
               <p className="text-xs text-blue-100">HyperDiaSense</p>
             </div>
           </div>

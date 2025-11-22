@@ -81,18 +81,6 @@ export default function Profile() {
           Manage your account settings and health information
         </p>
 
-        {/* Admin entry button */}
-        {adminLoading ? null : isAdmin ? (
-          <div className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setLocation('/admin')}
-              className="border-primary/40 text-primary hover:bg-primary/10 backdrop-blur-sm"
-            >
-              Open Admin Dashboard
-            </Button>
-          </div>
-        ) : null}
       </div>
 
 
