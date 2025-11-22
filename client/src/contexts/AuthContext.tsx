@@ -63,8 +63,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [isSigningUp]);
 
   const handleSignIn = async (email: string, password: string) => {
+    // Set global loading so app-level loader covers UI while auth/admin resolve
+    setLoading(true);
     try {
       await signInWithEmail(email, password);
+      // Successful sign-in will be handled by the onAuthChange listener which
+      // fetches the profile and clears `loading` when complete.
       if (user) {
         await createAuthAuditLog(
           user.uid,
@@ -78,6 +82,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         );
       }
     } catch (error) {
+      // On error, clear the loading flag so UI isn't stuck.
+      setLoading(false);
       console.error('Sign in failed:', error);
       await createAuthAuditLog(
         'anonymous',

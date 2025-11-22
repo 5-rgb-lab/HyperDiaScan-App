@@ -34,9 +34,11 @@ export function AdminProvider({ children }: AdminProviderProps) {
         return;
       }
 
+      // When a user is present, mark loading=true while we check their role.
+      setIsLoading(true);
       try {
-        const isAdmin = await isUserAdmin(user.uid);
-        setIsAdmin(isAdmin);
+        const result = await isUserAdmin(user.uid);
+        setIsAdmin(result);
       } catch (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
