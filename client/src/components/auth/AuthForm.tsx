@@ -76,7 +76,6 @@ export default function AuthForm() {
     setLoadingMessage('Signing you in...');
     try {
       await signIn(data.email, data.password);
-      toast({ title: 'Welcome back!', description: 'Signed in successfully.' });
     } catch (error: any) {
       console.error(error);
       toast({

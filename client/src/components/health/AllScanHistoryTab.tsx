@@ -80,7 +80,7 @@ export default function AllScanHistoryTab({ records, loading, onViewDetails }: A
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by food name, date, or user ID..."
+              placeholder="Search by food name"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-11 sm:h-10 text-base sm:text-sm"
@@ -128,67 +128,69 @@ export default function AllScanHistoryTab({ records, loading, onViewDetails }: A
             </div>
           ) : (
             filteredRecords.map((record) => (
-              <Card
-                key={record.id}
-                className="group relative overflow-hidden border-2 border-transparent hover:border-primary/50 transition-all duration-300 hover:shadow-xl"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative p-4 sm:p-5">
-                  {/* Mobile: Stack vertically, Desktop: Horizontal layout */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    {/* Content Section */}
-                    <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
-                      {/* Image */}
-                      <div className="flex-shrink-0">
-                        {record.imageUrl ? (
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 border-white shadow-lg ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
-                            <img 
-                              src={record.imageUrl} 
-                              alt={record.foodName || 'scan'} 
-                              className="w-full h-full object-cover" 
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-lg">
-                            <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Text Content */}
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-base sm:text-lg truncate bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                          {record.foodName || 'Unknown Food'}
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate flex items-center gap-1.5 mt-1">
-                          <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
-                          <span className="truncate">{record.date}</span>
-                        </p>
-                        {record.userId && (
-                          <p className="text-xs text-muted-foreground/70 truncate mt-1">
-                            User: {record.userId.substring(0, 8)}...
-                          </p>
-                        )}
-                        <Badge className={`${getPredictionColor(record.prediction)} mt-2 shadow-md font-medium px-2.5 py-1 text-xs sm:text-sm`}>
-                          {record.prediction === 'risky' ? '⚠️ Not Recommended' : '✅ Safe for Consumption'}
-                        </Badge>
-                      </div>
+            <Card
+              key={record.id}
+              className="relative border rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <div className="flex items-center gap-3 p-3 w-full overflow-hidden">
+                
+                {/* Image */}
+                <div className="flex-shrink-0">
+                  {record.imageUrl ? (
+                    <img
+                      src={record.imageUrl}
+                      alt={record.foodName || 'scan'}
+                      className="w-14 h-14 rounded-lg object-cover border"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white">
+                      <Calendar className="w-6 h-6" />
                     </div>
+                  )}
+                </div>
 
-                    {/* Action Button - View Details Only */}
-                    <div className="flex items-center gap-2 sm:gap-3 justify-end sm:ml-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onViewDetails(record)}
-                        className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent text-white hover:shadow-lg hover:scale-110 transition-all duration-200 active:scale-95"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </Button>
-                    </div>
+                {/* Text + Status */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">
+                    {record.foodName || 'Unknown Food'}
+                  </p>
+
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                    <Calendar className="w-3 h-3" />
+                    {record.date}
+                  </p>
+
+                  <div className="mt-1">
+                    <Badge
+                      className={`
+                        ${record.prediction === 'risky'
+                          ? 'bg-red-500/10 text-red-700'
+                          : 'bg-green-500/10 text-green-700'
+                        }
+                        px-2 py-0.5 text-[10px] font-medium rounded-md
+                      `}
+                    >
+                      {record.prediction === 'risky'
+                        ? '⚠️ Not Recommended'
+                        : '✅ Safe'}
+                    </Badge>
                   </div>
                 </div>
-              </Card>
+
+                {/* Actions */}
+                <div className="flex flex-shrink-0 items-center gap-1 ml-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onViewDetails(record)}
+                    className="h-9 w-9 rounded-md hover:bg-accent"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                </div>
+
+              </div>
+            </Card>
             ))
           )}
         </div>
