@@ -35,14 +35,15 @@ describe('Integration Tests', () => {
 
     // Ensure audit log helper (mocked module) returns a promise so .catch works
     const { createAuthAuditLog } = await import('@/admin/lib/auditLog');
-    if (createAuthAuditLog) vi.mocked(createAuthAuditLog).mockResolvedValue(undefined as any);
+    if (createAuthAuditLog) (vi.mocked(createAuthAuditLog) as any).mockResolvedValue(undefined as any);
 
     await signInWithEmail('test@example.com', 'password123');
 
-    // Scan food
-    vi.mocked(analyzeFood).mockResolvedValue({
+    // Scan food (mocked)
+    (vi.mocked(analyzeFood) as any).mockResolvedValue({
       prediction: 'Safe',
-      reasoning: 'Good choice'
+      reasoning: 'Good choice',
+      healthTip: [{ content: 'Good choice' }]
     });
 
     const analysis = await analyzeFood({
@@ -55,7 +56,7 @@ describe('Integration Tests', () => {
       fiber: 4,
       totalSugars: 19,
       condition: 'diabetes'
-    } as any, null);
+    } as any, null as any);
 
     expect(analysis.prediction).toBe('Safe');
 
@@ -63,11 +64,10 @@ describe('Integration Tests', () => {
     const { addDoc } = await import('firebase/firestore');
     vi.mocked(addDoc).mockResolvedValue({ id: 'record-123' } as any);
 
-    const recordId = await saveScanRecord({
-      userId: 'new-user',
+    const recordId = await saveScanRecord('new-user', {
       foodName: 'Apple',
       condition: 'diabetes',
-      prediction: 'safe',
+      prediction: 'Safe',
       nutritionData: {
         calories: 95,
         carbohydrates: 25,
@@ -77,7 +77,7 @@ describe('Integration Tests', () => {
         fiber: 4,
         totalSugars: 19
       }
-    });
+    } as any);
 
     expect(recordId).toBe('record-123');
   });

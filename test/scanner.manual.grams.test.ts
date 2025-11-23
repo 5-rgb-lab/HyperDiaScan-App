@@ -18,12 +18,13 @@ describe('Scanner - Manual Entry (Grams)', () => {
       condition: 'diabetes' as const
     };
 
-    vi.mocked(analyzeFood).mockResolvedValue({
+    (vi.mocked(analyzeFood) as any).mockResolvedValue({
       prediction: 'Safe',
-      reasoning: 'Suitable for diabetes management'
+      reasoning: 'Suitable for diabetes management',
+      healthTip: [{ content: 'Suitable for diabetes management' }]
     });
 
-    const result = await analyzeFood(mockData, null, { unit: 'grams' });
+    const result = await analyzeFood(mockData as any, null as any, { unit: 'grams' });
     expect(result.prediction).toBe('Safe');
   });
 
@@ -40,13 +41,14 @@ describe('Scanner - Manual Entry (Grams)', () => {
       condition: 'hypertension' as const
     };
 
-    vi.mocked(analyzeFood).mockResolvedValue({
-      prediction: 'Not Recommended',
-      reasoning: 'High sodium content'
+    (vi.mocked(analyzeFood) as any).mockResolvedValue({
+      prediction: 'Risky',
+      reasoning: 'High sodium content',
+      healthTip: [{ content: 'High sodium content' }]
     });
 
-    const result = await analyzeFood(mockData, null, { unit: 'grams' });
-    expect(result.prediction).toBe('Not Recommended');
+    const result = await analyzeFood(mockData as any, null as any, { unit: 'grams' });
+    expect(result.prediction).toBe('Risky');
   });
 
   it('should validate required nutrition fields', async () => {
@@ -55,7 +57,7 @@ describe('Scanner - Manual Entry (Grams)', () => {
       calories: 150
       // Missing required fields
     };
-    vi.mocked(analyzeFood).mockRejectedValue(new Error('Missing fields'));
-    await expect(analyzeFood(incompleteData as any, null, { unit: 'grams' })).rejects.toThrow();
+    (vi.mocked(analyzeFood) as any).mockRejectedValue(new Error('Missing fields'));
+    await expect(analyzeFood(incompleteData as any, null as any, { unit: 'grams' })).rejects.toThrow();
   });
 });

@@ -18,12 +18,13 @@ describe('Scanner - Manual Entry (RENI)', () => {
       condition: 'diabetes' as const
     };
 
-    vi.mocked(analyzeFood).mockResolvedValue({
+    (vi.mocked(analyzeFood) as any).mockResolvedValue({
       prediction: 'Safe',
-      reasoning: 'Good macronutrient balance'
+      reasoning: 'Good macronutrient balance',
+      healthTip: [{ content: 'Good macronutrient balance' }]
     });
 
-    const result = await analyzeFood(mockData, null, { unit: 'reni' });
+    const result = await analyzeFood(mockData as any, null as any, { unit: 'reni' });
     expect(result.prediction).toBe('Safe');
   });
 
@@ -40,7 +41,7 @@ describe('Scanner - Manual Entry (RENI)', () => {
       condition: 'hypertension' as const
     };
 
-    await analyzeFood(mockData, null, { unit: 'reni' });
+    await analyzeFood(mockData as any, null as any, { unit: 'reni' });
     expect(analyzeFood).toHaveBeenCalledWith(mockData, null, { unit: 'reni' });
   });
 
@@ -57,12 +58,13 @@ describe('Scanner - Manual Entry (RENI)', () => {
       condition: 'diabetes' as const
     };
 
-    vi.mocked(analyzeFood).mockResolvedValue({
+    (vi.mocked(analyzeFood) as any).mockResolvedValue({
       prediction: 'Safe',
-      reasoning: 'No significant nutrients'
+      reasoning: 'No significant nutrients',
+      healthTip: [{ content: 'No significant nutrients' }]
     });
 
-    const result = await analyzeFood(mockData, null, { unit: 'reni' });
+    const result = await analyzeFood(mockData as any, null as any, { unit: 'reni' });
     expect(result).toBeDefined();
   });
 });

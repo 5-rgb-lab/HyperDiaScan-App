@@ -1,4 +1,4 @@
-
+// @ts-ignore 
 import { describe, it, expect, vi } from 'vitest';
 import { createAuthAuditLog, createScanAuditLog, createProfileAuditLog } from '@/admin/lib/auditLog';
 
@@ -37,8 +37,8 @@ describe('Audit Logs', () => {
 
     expect(addDoc).toHaveBeenCalled();
     // Find the call that contains the scan category (mock may be called multiple times)
-    const calls = vi.mocked(addDoc).mock.calls.map(c => c[1]);
-    const found = calls.find(payload => payload && payload.category === 'scan');
+    const calls = vi.mocked(addDoc).mock.calls.map(c => c[1] as any);
+    const found = calls.find((payload: any) => payload && payload.category === 'scan');
     expect(found).toBeDefined();
     expect(found).toEqual(expect.objectContaining({ category: 'scan', action: 'scan.food' }));
   });
@@ -56,8 +56,8 @@ describe('Audit Logs', () => {
     );
 
     expect(addDoc).toHaveBeenCalled();
-    const calls = vi.mocked(addDoc).mock.calls.map(c => c[1]);
-    const found = calls.find(payload => payload && payload.category === 'profile');
+    const calls = vi.mocked(addDoc).mock.calls.map(c => c[1] as any);
+    const found = calls.find((payload: any) => payload && payload.category === 'profile');
     expect(found).toBeDefined();
     expect(found).toEqual(expect.objectContaining({ category: 'profile', action: 'profile.update' }));
   });

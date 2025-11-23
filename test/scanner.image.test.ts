@@ -9,19 +9,24 @@ describe('Scanner - Image Analysis', () => {
     const mockFile = new File(['test'], 'label.jpg', { type: 'image/jpeg' });
     
     vi.mocked(analyzeImageFile).mockResolvedValue({
-      foodName: 'Granola Bar',
-      calories: 200,
-      carbohydrates: 30,
-      protein: 5,
-      fat: 8,
-      sodium: 150,
-      fiber: 3,
-      totalSugars: 12
-    });
+      prediction: 'Safe',
+      reasoning: 'Parsed label',
+      healthTip: [{ content: 'Parsed label' }],
+      nutritionData: {
+        foodName: 'Granola Bar',
+        calories: 200,
+        carbohydrates: 30,
+        protein: 5,
+        fat: 8,
+        sodium: 150,
+        fiber: 3,
+        totalSugars: 12
+      }
+    } as any);
 
     const result = await analyzeImageFile(mockFile);
-    expect(result.foodName).toBe('Granola Bar');
-    expect(result.calories).toBe(200);
+    expect((result as any).nutritionData.foodName).toBe('Granola Bar');
+    expect((result as any).nutritionData.calories).toBe(200);
   });
 
   it('should reject invalid image formats', async () => {
@@ -36,15 +41,20 @@ describe('Scanner - Image Analysis', () => {
     const mockFile = new File(['blurry'], 'blurry.jpg', { type: 'image/jpeg' });
     
     vi.mocked(analyzeImageFile).mockResolvedValue({
-      foodName: 'Unknown',
-      calories: 0,
-      carbohydrates: 0,
-      protein: 0,
-      fat: 0,
-      sodium: 0,
-      fiber: 0,
-      totalSugars: 0
-    });
+      prediction: 'Risky',
+      reasoning: 'Low quality',
+      healthTip: [{ content: 'Low quality image' }],
+      nutritionData: {
+        foodName: 'Unknown',
+        calories: 0,
+        carbohydrates: 0,
+        protein: 0,
+        fat: 0,
+        sodium: 0,
+        fiber: 0,
+        totalSugars: 0
+      }
+    } as any);
 
     const result = await analyzeImageFile(mockFile);
     expect(result).toBeDefined();
