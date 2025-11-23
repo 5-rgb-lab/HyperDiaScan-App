@@ -11,7 +11,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: path.resolve(__dirname, './client/src/setupTests.ts'),
+    // include our test setup which mocks firebase early to avoid real initialization
+    setupFiles: [path.resolve(__dirname, './client/src/setupTests.ts'), path.resolve(__dirname, './test-setup/vitest.setup.ts')],
     include: ['test/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
   },
 });
