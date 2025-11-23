@@ -53,7 +53,7 @@ export const analyzeFood = async (
       // MANUAL MODE: LLM send failed. Log error but use fallback silently.
       console.error('Error sending prompt to Gradio Space:', sendErr)
       console.warn('⚠️ Falling back to heuristic analysis for manual mode (send error)')
-      return fallbackAnalysis(nutritionData)
+      return fallbackAnalysis(nutritionData, options?.unit === 'reni' ? 'reni' : 'grams')
     }
 
     return parseLlmResponse(String(output))
@@ -66,7 +66,7 @@ export const analyzeFood = async (
     // MANUAL MODE: Use fallback logic with provided nutrition data.
     // Always return a valid assessment (Safe or Risky).
     console.warn('⚠️ Falling back to heuristic analysis for manual mode')
-    return fallbackAnalysis(nutritionData)
+    return fallbackAnalysis(nutritionData, options?.unit === 'reni' ? 'reni' : 'grams')
   }
 }
 

@@ -5,19 +5,46 @@ import {
   onAuthStateChanged,
   User,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { UserProfile, userProfileSchema } from '@shared/schema';
+import { createAuthAuditLog } from '@/admin/lib/auditLog';
 
 // ----------------------------
 // Sign in / Sign up
 // ----------------------------
 export const signInWithEmail = async (email: string, password: string) => {
   try {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+    // Check if the user account is active
+    const userProfileDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+    if (!userProfileDoc.exists() || !userProfileDoc.data().active) {
+      // If the user is not active, sign them out immediately and throw an error
+      await firebaseSignOut(auth);
+      throw new Error('Account is inactive. Please contact support.');
+    }
+
+    // Log successful login (non-blocking)
+    createAuthAuditLog(
+      userCredential.user.uid,
+      'user.login',
+      `User logged in: ${email}`,
+      'success',
+      {
+        email,
+        lastLogin: new Date().toISOString(),
+      }
+    ).catch(err => console.warn('Audit log failed:', err));
+
+    // Update last active timestamp
+    await updateDoc(doc(db, 'users', userCredential.user.uid), {
+      lastActive: new Date().toISOString()
+    });
+
+    return userCredential.user;
   } catch (error) {
     console.error('Error signing in with email:', error);
     throw error;
@@ -87,7 +114,8 @@ export const createUserProfile = async (user: User, profileData?: Partial<UserPr
         heightCm: profileData?.demographics?.heightCm || 170,
         weightKg: profileData?.demographics?.weightKg || 70,
         activityLevel: profileData?.demographics?.activityLevel || 'Sedentary'
-      }
+      },
+      active: true // Default to active
     };
 
     // Save the full profile and add default tips. Mark profile as incomplete so user can edit.
@@ -97,7 +125,9 @@ export const createUserProfile = async (user: User, profileData?: Partial<UserPr
       uid: user.uid,
       isProfileComplete: false,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      active: true,
+      lastActive: new Date().toISOString()
     });
   }
 };
@@ -105,7 +135,7 @@ export const createUserProfile = async (user: User, profileData?: Partial<UserPr
 export const updateUserProfile = async (userId: string, profile: UserProfile) => {
   const userRef = doc(db, 'users', userId);
   const userSnap = await getDoc(userRef);
-  
+
   const defaultProfile: UserProfile = {
     name: '',
     email: '',
@@ -117,12 +147,13 @@ export const updateUserProfile = async (userId: string, profile: UserProfile) =>
       diabetesMedication: { medications: [] },
       hypertensionMedication: { medications: [] }
     },
-    demographics: { biologicalSex: 'Male', age: 18, heightCm: 170, weightKg: 70, activityLevel: 'Sedentary' }
+    demographics: { biologicalSex: 'Male', age: 18, heightCm: 170, weightKg: 70, activityLevel: 'Sedentary' },
+    active: true
   };
 
   // Get existing data or use default profile
   const existingData = userSnap.exists() ? userSnap.data() as UserProfile : defaultProfile;
-  
+
   // Merge the new profile data with existing data
   const updatedProfile = {
     ...existingData,
@@ -133,10 +164,10 @@ export const updateUserProfile = async (userId: string, profile: UserProfile) =>
   // Validate the profile against the schema
   try {
     const validatedProfile = userProfileSchema.parse(updatedProfile);
-    
+
     // Save the validated profile
     await setDoc(userRef, validatedProfile, { merge: true });
-    
+
     // Fetch and return the updated profile
     const updatedSnap = await getDoc(userRef);
     return updatedSnap.exists() ? updatedSnap.data() as UserProfile : null;
@@ -145,11 +176,11 @@ export const updateUserProfile = async (userId: string, profile: UserProfile) =>
     throw error;
   }
 };
- 
+
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   const userRef = doc(db, 'users', userId);
   const userSnap = await getDoc(userRef);
-  
+
   if (userSnap.exists()) {
     return userSnap.data() as UserProfile;
   }
@@ -171,7 +202,21 @@ export const resetPassword = async (email: string) => {
 
 export const signOut = async () => {
   try {
+    const user = auth.currentUser;
     await firebaseSignOut(auth);
+
+    // Log logout after sign out succeeds (non-blocking)
+    if (user) {
+      createAuthAuditLog(
+        user.uid,
+        'user.logout',
+        `User logged out: ${user.email || user.uid}`,
+        'success',
+        {
+          email: user.email || undefined,
+        }
+      ).catch(err => console.warn('Audit log failed:', err));
+    }
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;

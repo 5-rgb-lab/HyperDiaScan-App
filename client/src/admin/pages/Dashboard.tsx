@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Users, PieChart, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
 import { getUserStats } from '@/admin/lib/admin';
+import { getScanAnalytics, ScanAnalytics } from '@/admin/lib/analytics';
+import { ScanAnalyticsChart } from '@/admin/components/ScanAnalyticsChart';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -10,6 +12,8 @@ export default function Dashboard() {
     totalScans: 0,
     scanningTrend: 'increasing',
   });
+
+  const [analytics, setAnalytics] = useState<ScanAnalytics | null>(null);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -20,7 +24,18 @@ export default function Dashboard() {
         console.error('Error loading dashboard stats:', error);
       }
     };
+    
+    const loadAnalytics = async () => {
+      try {
+        const data = await getScanAnalytics();
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Error loading scan analytics:', error);
+      }
+    };
+    
     loadStats();
+    loadAnalytics();
   }, []);
 
   const cards = [
@@ -53,17 +68,7 @@ export default function Dashboard() {
       bgGradient: 'from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50',
       iconBg: 'bg-gradient-to-br from-purple-500 to-pink-500',
       trend: '+8%',
-    },
-    {
-      title: 'Scanning Trend',
-      value: stats.scanningTrend === 'increasing' ? 'Growing' : 'Declining',
-      description: 'Compared to last month',
-      icon: stats.scanningTrend === 'increasing' ? TrendingUp : TrendingDown,
-      gradient: stats.scanningTrend === 'increasing' ? 'from-orange-500 via-orange-600 to-amber-500' : 'from-red-500 via-red-600 to-rose-500',
-      bgGradient: stats.scanningTrend === 'increasing' ? 'from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50' : 'from-red-50 to-rose-50 dark:from-red-950/50 dark:to-rose-950/50',
-      iconBg: stats.scanningTrend === 'increasing' ? 'bg-gradient-to-br from-orange-500 to-amber-500' : 'bg-gradient-to-br from-red-500 to-rose-500',
-      trend: stats.scanningTrend === 'increasing' ? '+15%' : '-3%',
-    },
+    }
   ];
 
   return (
@@ -78,7 +83,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Welcome back! Here's what's happening with your app.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+     <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] justify-center max-w-7xl mx-auto">
         {cards.map((card, i) => (
           <Card 
             key={i} 
@@ -112,6 +117,19 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {analytics && (
+        <div className="mt-8">
+          <h3 className="text-2xl font-bold mb-6">Scan Analytics</h3>
+          <ScanAnalyticsChart 
+            weeklyTrend={analytics.weeklyTrend}
+            monthlyTrend={analytics.monthlyTrend}
+            mostActiveUsers={analytics.mostActiveUsers}
+            diabetesScans={analytics.diabetesScans}
+            hypertensionScans={analytics.hypertensionScans}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminUsers } from '@/admin/hooks/useAdminUsers';
 import {
@@ -24,7 +24,12 @@ import {
   UserX,
   Filter,
   Download,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -40,22 +45,147 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { UserDetailsModal, UserDetails } from '@/admin/components/UserDetailsModal';
+import { format, subDays, isAfter, isBefore } from 'date-fns';
+
+type SortField = 'name' | 'email' | 'lastActive' | 'createdAt';
+type SortOrder = 'asc' | 'desc';
 
 export default function Users() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  
   const { users, isLoading, toggleUserStatus } = useAdminUsers();
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.name.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && user.active) ||
-      (statusFilter === 'inactive' && !user.active);
-    
-    return matchesSearch && matchesStatus;
-  });
+  const parseDateValue = (val: any): Date | null => {
+    if (!val) return null;
+    if (val?.toDate && typeof val.toDate === 'function') return val.toDate();
+    if (val?.seconds) return new Date(val.seconds * 1000);
+    if (typeof val === 'string') return new Date(val);
+    if (val instanceof Date) return val;
+    return null;
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const handleViewDetails = (user: any) => {
+    setSelectedUser(user as UserDetails);
+    setModalOpen(true);
+  };
+
+  const filteredAndSortedUsers = useMemo(() => {
+    let result = users.filter((user) => {
+      const matchesSearch = user.email.toLowerCase().includes(search.toLowerCase()) ||
+        user.name.toLowerCase().includes(search.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'active' && user.active) ||
+        (statusFilter === 'inactive' && !user.active);
+
+      let matchesDate = true;
+      if (dateFilter !== 'all' && (user as any).createdAt) {
+        const createdAtRaw = (user as any).createdAt;
+        let userDate: Date;
+        
+        // Handle Firestore Timestamp objects
+        if (createdAtRaw?.toDate && typeof createdAtRaw.toDate === 'function') {
+          userDate = createdAtRaw.toDate();
+        } else if (createdAtRaw?.seconds) {
+          userDate = new Date(createdAtRaw.seconds * 1000);
+        } else if (typeof createdAtRaw === 'string') {
+          userDate = new Date(createdAtRaw);
+        } else if (createdAtRaw instanceof Date) {
+          userDate = createdAtRaw;
+        } else {
+          return true; // Skip filtering if can't parse date
+        }
+        
+        const now = new Date();
+        
+        switch (dateFilter) {
+          case '7days':
+            matchesDate = isAfter(userDate, subDays(now, 7));
+            break;
+          case '30days':
+            matchesDate = isAfter(userDate, subDays(now, 30));
+            break;
+          case '90days':
+            matchesDate = isAfter(userDate, subDays(now, 90));
+            break;
+        }
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      if (sortField === 'createdAt') {
+        const parseTimestamp = (val: any) => {
+          if (!val) return 0;
+          if (val?.toDate && typeof val.toDate === 'function') return val.toDate().getTime();
+          if (val?.seconds) return val.seconds * 1000;
+          if (typeof val === 'string') return new Date(val).getTime();
+          if (val instanceof Date) return val.getTime();
+          return 0;
+        };
+        aValue = parseTimestamp((a as any)[sortField]);
+        bValue = parseTimestamp((b as any)[sortField]);
+      } else if (sortField === 'lastActive') {
+        const parseTimestamp = (val: any) => {
+          if (!val) return 0;
+          if (val?.toDate && typeof val.toDate === 'function') return val.toDate().getTime();
+          if (val?.seconds) return val.seconds * 1000;
+          if (typeof val === 'string') return new Date(val).getTime();
+          if (val instanceof Date) return val.getTime();
+          return 0;
+        };
+        aValue = parseTimestamp(a[sortField]);
+        bValue = parseTimestamp(b[sortField]);
+      } else {
+        aValue = a[sortField]?.toString().toLowerCase() || '';
+        bValue = b[sortField]?.toString().toLowerCase() || '';
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    return result;
+  }, [users, search, statusFilter, dateFilter, sortField, sortOrder]);
+
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedUsers.slice(startIndex, endIndex);
+  }, [filteredAndSortedUsers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
+    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4 ml-1" /> : <ArrowDown className="h-4 w-4 ml-1" />;
+  };
 
   const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
     try {
@@ -87,12 +217,6 @@ export default function Users() {
             Users
           </h2>
           <p className="text-muted-foreground mt-1">Manage and monitor all registered users</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
         </div>
       </div>
 
@@ -170,6 +294,17 @@ export default function Users() {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Joined Date" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="7days">Last 7 days</SelectItem>
+                  <SelectItem value="30days">Last 30 days</SelectItem>
+                  <SelectItem value="90days">Last 90 days</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
@@ -178,23 +313,40 @@ export default function Users() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 dark:bg-gray-900/50">
-                  <TableHead className="font-semibold">Name</TableHead>
-                  <TableHead className="font-semibold">Email</TableHead>
+                  <TableHead className="font-semibold">
+                    <button onClick={() => handleSort('name')} className="flex items-center hover:text-blue-600">
+                      Name <SortIcon field="name" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    <button onClick={() => handleSort('email')} className="flex items-center hover:text-blue-600">
+                      Email <SortIcon field="email" />
+                    </button>
+                  </TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Primary Condition</TableHead>
-                  <TableHead className="font-semibold">Last Active</TableHead>
+                  <TableHead className="font-semibold">
+                    <button onClick={() => handleSort('createdAt')} className="flex items-center hover:text-blue-600">
+                      Registered <SortIcon field="createdAt" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    <button onClick={() => handleSort('lastActive')} className="flex items-center hover:text-blue-600">
+                      Last Active <SortIcon field="lastActive" />
+                    </button>
+                  </TableHead>
                   <TableHead className="text-right font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.length === 0 ? (
+                {paginatedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No users found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((user) => (
+                  paginatedUsers.map((user) => (
                     <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors">
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
@@ -216,7 +368,16 @@ export default function Users() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {user.lastActive || 'Never'}
+                        {(() => {
+                          const d = parseDateValue((user as any).createdAt);
+                          return d ? format(d, 'MMM d, yyyy') : '—';
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {(() => {
+                          const la = parseDateValue((user as any).lastActive);
+                          return la ? format(la, 'MMM d, yyyy h:mm a') : 'Never';
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -226,7 +387,7 @@ export default function Users() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => handleViewDetails(user)}>
                               <UserCog className="mr-2 h-4 w-4" />
                               <span>View Details</span>
                             </DropdownMenuItem>
@@ -259,13 +420,70 @@ export default function Users() {
         </CardContent>
       </Card>
 
-      {filteredUsers.length > 0 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <div>
-            Showing {filteredUsers.length} of {users.length} users
+      {filteredAndSortedUsers.length > 0 && (
+        <div className="flex items-center justify-between text-sm">
+          <div className="text-muted-foreground">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedUsers.length)} of {filteredAndSortedUsers.length} users
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-10"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
+
+      <UserDetailsModal 
+        user={selectedUser}
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedUser(null);
+        }}
+      />
     </div>
   );
 }
