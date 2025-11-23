@@ -107,17 +107,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-800 space-y-1">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 font-medium"
-              onClick={() => {
-                window.location.href = '/';
-                setSidebarOpen(false);
-              }}
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to App
-            </Button>
-            <Button
-              variant="ghost"
               className="w-full justify-start gap-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-300 font-medium"
               onClick={() => signOut()}
             >

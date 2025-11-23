@@ -51,6 +51,7 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
       weightKg: 70,
       activityLevel: 'Sedentary',
     },
+    active: true,
   }
 
   const form = useForm<UserProfileType>({

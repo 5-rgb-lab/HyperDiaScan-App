@@ -49,7 +49,21 @@ export const saveScanRecord = async (
     if (imageDataUrl) payload.imageDataUrl = imageDataUrl;
 
     const docRef = await addDoc(scansCollection, payload);
+
+        // Update user's last active timestamp
+    if (userId) {
+      try {
+        await updateDoc(doc(db, 'users', userId), {
+          lastActive: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Failed to update lastActive:', error);
+      }
+    }
+
     return docRef.id;
+
+    
   } catch (error) {
     console.error('Error saving scan record:', error);
     throw error;

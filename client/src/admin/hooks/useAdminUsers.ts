@@ -29,7 +29,8 @@ export function useAdminUsers() {
           // If `active` isn't present, default to true so older docs don't appear inactive
           active: typeof data.active === 'boolean' ? data.active : true,
           primaryCondition: data.primaryCondition || data.profile?.primaryCondition || undefined,
-          lastActive: data.lastActive || undefined,
+          lastActive: data.lastActive || null,
+          createdAt: data.createdAt || null,
           // spread remaining fields so UI can still access them
           ...data,
         } as User;

@@ -66,12 +66,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Set global loading so app-level loader covers UI while auth/admin resolve
     setLoading(true);
     try {
-      await signInWithEmail(email, password);
+      const userCredential = await signInWithEmail(email, password);
+      
+      // Check if user account is active
+      const profile = await getUserProfile(userCredential.uid);
+      if (profile && profile.active === false) {
+        // Sign out the user immediately
+        await signOut();
+        setLoading(false);
+        
+        await createAuthAuditLog(
+          userCredential.uid,
+          'user.login',
+          'Login blocked - account is inactive',
+          'error',
+          {
+            method: 'email',
+            emailProvider: email.split('@')[1]
+          }
+        );
+        
+        throw new Error('Your account has been deactivated. Please contact support.');
+      }
+      
       // Successful sign-in will be handled by the onAuthChange listener which
       // fetches the profile and clears `loading` when complete.
-      if (user) {
+      if (userCredential) {
         await createAuthAuditLog(
-          user.uid,
+          userCredential.uid,
           'user.login',
           'User successfully signed in',
           'success',

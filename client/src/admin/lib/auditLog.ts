@@ -26,10 +26,16 @@ export type AuditAction =
   | 'health.condition_updated'
   
   // Scan actions
+  | 'scan.food'        // New: Log all scan actions
   | 'scan.created'
   | 'scan.analyzed'
   | 'scan.saved'
   | 'scan.deleted'
+  
+  // History actions
+  | 'history.saved'    // New: When scan is saved to history
+  | 'history.deleted'  // New: When history item is deleted
+  | 'history.viewed'
   
   // System actions
   | 'system.error'
@@ -54,9 +60,6 @@ export interface AuditLogEntry {
   };
 }
 
-/**
- * Create an audit log entry with enhanced metadata
- */
 export async function createAuditLog(entry: Omit<AuditLogEntry, 'timestamp' | 'severity'> & { severity?: AuditSeverity }) {
   try {
     const auditLogRef = collection(db, 'auditLogs');
@@ -80,26 +83,9 @@ export async function createAuditLog(entry: Omit<AuditLogEntry, 'timestamp' | 's
 
     return true;
   } catch (error) {
-    console.error('Error creating audit log:', error);
-    // Create system error log
-    try {
-      const auditLogRef = collection(db, 'auditLogs');
-      await addDoc(auditLogRef, {
-        userId: entry.userId,
-        category: 'system',
-        action: 'system.error',
-        description: 'Failed to create audit log',
-        status: 'error',
-        severity: 'error',
-        metadata: {
-          originalEntry: entry,
-          timestamp: new Date().toISOString()
-        },
-        timestamp: serverTimestamp()
-      });
-    } catch (e) {
-      console.error('Failed to create error log:', e);
-    }
+    // Silently fail if audit logs fail (don't block user actions)
+    // This could happen if Firestore rules don't permit audit log writes
+    console.warn('Audit log write failed (non-critical):', error);
     return false;
   }
 }
@@ -123,7 +109,23 @@ export function createAuthAuditLog(userId: string, action: Extract<AuditAction, 
 /**
  * Helper function to create scan-related audit logs
  */
-export function createScanAuditLog(userId: string, action: Extract<AuditAction, 'scan.created' | 'scan.analyzed' | 'scan.saved' | 'scan.deleted'>, description: string, status: 'success' | 'error' = 'success', metadata?: Record<string, any>) {
+export function createScanAuditLog(userId: string, action: Extract<AuditAction, 'scan.food' | 'scan.created' | 'scan.analyzed' | 'scan.saved' | 'scan.deleted'>, description: string, status: 'success' | 'error' = 'success', metadata?: Record<string, any>) {
+  return createAuditLog({
+    userId,
+    category: 'scan',
+    action,
+    description,
+    status,
+    metadata: {
+      details: metadata
+    }
+  });
+}
+
+/**
+ * Helper function to create history-related audit logs
+ */
+export function createHistoryAuditLog(userId: string, action: Extract<AuditAction, 'history.saved' | 'history.deleted' | 'history.viewed'>, description: string, status: 'success' | 'error' = 'success', metadata?: Record<string, any>) {
   return createAuditLog({
     userId,
     category: 'scan',

@@ -113,6 +113,10 @@ export const userProfileSchema = z.object({
   hypertensionStatus: hypertensionStatusSchema.optional(),
   treatmentManagement: treatmentManagementSchema,
   demographics: demographicsSchema,
+  active: z.boolean().optional().default(true),
+  lastActive: z.string().optional(),
+  createdAt: z.string().optional(),
+  
 });
 
 // ----------------------------------------------------
