@@ -19,14 +19,9 @@ describe('Tips - Generate Personalized Tips', () => {
       }
     };
 
-    vi.mocked(generatePersonalizedDailyTips).mockResolvedValue([
-      { content: 'Monitor your blood sugar regularly' },
-      { content: 'Choose complex carbohydrates' },
-      { content: 'Stay hydrated throughout the day' }
-    ]);
-
-    const tips = await generatePersonalizedDailyTips(mockProfile as any);
-    expect(tips).toHaveLength(3);
+    // The real function returns void; the module is mocked so assert it resolves
+    (vi.mocked(generatePersonalizedDailyTips) as any).mockResolvedValue(undefined);
+    await expect(generatePersonalizedDailyTips('user-1', mockProfile as any)).resolves.toBeUndefined();
   });
 
   it('should generate tips for hypertension patients', async () => {
@@ -41,14 +36,8 @@ describe('Tips - Generate Personalized Tips', () => {
       }
     };
 
-    vi.mocked(generatePersonalizedDailyTips).mockResolvedValue([
-      { content: 'Reduce sodium intake' },
-      { content: 'Exercise regularly' },
-      { content: 'Monitor blood pressure daily' }
-    ]);
-
-    const tips = await generatePersonalizedDailyTips(mockProfile as any);
-    expect(tips.length).toBeGreaterThan(0);
+    (vi.mocked(generatePersonalizedDailyTips) as any).mockResolvedValue(undefined);
+    await expect(generatePersonalizedDailyTips('user-2', mockProfile as any)).resolves.toBeUndefined();
   });
 
   it('should update user health tips in Firestore', async () => {

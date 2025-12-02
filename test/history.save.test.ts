@@ -7,10 +7,9 @@ vi.mock('firebase/firestore');
 describe('History - Save Records', () => {
   it('should save scan record successfully', async () => {
     const mockRecord = {
-      userId: 'test-user',
       foodName: 'Apple',
       condition: 'diabetes' as const,
-      prediction: 'safe' as const,
+      prediction: 'Safe' as const,
       nutritionData: {
         calories: 95,
         carbohydrates: 25,
@@ -25,7 +24,7 @@ describe('History - Save Records', () => {
     const { addDoc } = await import('firebase/firestore');
     vi.mocked(addDoc).mockResolvedValue({ id: 'record-123' } as any);
 
-    const recordId = await saveScanRecord(mockRecord);
+    const recordId = await saveScanRecord('test-user', mockRecord as any);
     expect(recordId).toBe('record-123');
   });
 
@@ -47,27 +46,26 @@ describe('History - Save Records', () => {
     };
 
     const { addDoc } = await import('firebase/firestore');
-    await saveScanRecord(mockRecord);
+    await saveScanRecord('test-user', mockRecord as any);
 
     expect(addDoc).toHaveBeenCalled();
     const call = vi.mocked(addDoc).mock.calls[0];
-    const payload = call[1];
+    const payload = call[1] as any;
     expect(payload).toBeDefined();
     expect(typeof payload.timestamp).toBe('string');
   });
 
   it('should handle save errors gracefully', async () => {
     const mockRecord = {
-      userId: 'test-user',
       foodName: 'Orange',
       condition: 'diabetes' as const,
-      prediction: 'safe' as const,
+      prediction: 'Safe' as const,
       nutritionData: {} as any
     };
 
     const { addDoc } = await import('firebase/firestore');
     vi.mocked(addDoc).mockRejectedValue(new Error('Firestore error'));
 
-    await expect(saveScanRecord(mockRecord)).rejects.toThrow();
+    await expect(saveScanRecord('test-user', mockRecord as any)).rejects.toThrow();
   });
 });

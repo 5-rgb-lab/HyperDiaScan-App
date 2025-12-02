@@ -32,7 +32,7 @@ describe('Profile - Update User Profile', () => {
       data: () => mockProfile
     } as any);
 
-    const updated = await updateUserProfile('user-123', mockProfile);
+    const updated = await updateUserProfile('user-123', mockProfile as any);
     expect(updated).toBeDefined();
   });
 
@@ -57,7 +57,7 @@ describe('Profile - Update User Profile', () => {
       }
     };
 
-    await updateUserProfile('user-456', mockProfile);
+    await updateUserProfile('user-456', mockProfile as any);
     const { setDoc } = await import('firebase/firestore');
     expect(setDoc).toHaveBeenCalled();
   });

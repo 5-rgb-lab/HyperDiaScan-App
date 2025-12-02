@@ -166,20 +166,20 @@ export default function ReniForm({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { name: "calories", label: "Calories", unit: "%", icon: "🔥" },
-                  { name: "carbohydrates", label: "Carbohydrates", unit: "%", icon: "🌾" },
-                  { name: "totalSugars", label: "Total Sugars", unit: "%", icon: "🍬" },
-                  { name: "addedSugars", label: "Added Sugars", unit: "%", icon: "🧁" },
-                  { name: "protein", label: "Protein", unit: "%", icon: "🥩" },
-                  { name: "fat", label: "Total Fat", unit: "%", icon: "🧈" },
-                  { name: "saturatedFat", label: "Saturated Fat", unit: "%", icon: "🥓" },
-                  { name: "transFat", label: "Trans Fat", unit: "%", icon: "⚠️" },
-                  { name: "sodium", label: "Sodium", unit: "%", icon: "🧂" },
-                  { name: "potassium", label: "Potassium", unit: "%", icon: "🍌" },
-                  { name: "cholesterol", label: "Cholesterol", unit: "%", icon: "💊" },
-                  { name: "fiber", label: "Dietary Fiber", unit: "%", icon: "🥬" },
-                  { name: "servingSize", label: "Serving Size", unit: "text", icon: "📏" },
-                  { name: "servingsPerContainer", label: "Servings / Container", unit: "count", icon: "📦" },
+                  { name: "calories", label: "Calories", unit: "%", icon: "" },
+                  { name: "carbohydrates", label: "Carbohydrates", unit: "%", icon: "" },
+                  { name: "totalSugars", label: "Total Sugars", unit: "%", icon: "" },
+                  { name: "addedSugars", label: "Added Sugars", unit: "%", icon: "" },
+                  { name: "protein", label: "Protein", unit: "%", icon: "" },
+                  { name: "fat", label: "Total Fat", unit: "%", icon: "" },
+                  { name: "saturatedFat", label: "Saturated Fat", unit: "%", icon: "" },
+                  { name: "transFat", label: "Trans Fat", unit: "%", icon: "" },
+                  { name: "sodium", label: "Sodium", unit: "%", icon: "" },
+                  { name: "potassium", label: "Potassium", unit: "%", icon: "" },
+                  { name: "cholesterol", label: "Cholesterol", unit: "%", icon: "" },
+                  { name: "fiber", label: "Dietary Fiber", unit: "%", icon: "" },
+                  { name: "servingSize", label: "Serving Size", unit: "text", icon: "" },
+                  { name: "servingsPerContainer", label: "Servings / Container", unit: "count", icon: "" },
                 ].map((fieldData) => (
                   <FormField
                     key={fieldData.name}
