@@ -400,13 +400,14 @@ export default function Scanner() {
                       Choose Analysis Method
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      Scan a nutrition label or enter values manually
+                      Enter nutrition values manually using grams or RENI-based inputs
                     </p>
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
+
                     {/* Take Photo / Upload Image */}
-                    <button
+                    {/* <button
                       onClick={openFilePicker}
                       className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-blue-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-blue-50 via-purple-50 to-teal-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-teal-950/30"
                     >
@@ -426,7 +427,7 @@ export default function Scanner() {
                           </p>
                         </div>
                       </div>
-                    </button>
+                    </button> */}
 
                     {/* Manual Entry */}
                     <div className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-purple-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50 dark:from-purple-950/30 dark:via-teal-950/30 dark:to-blue-950/30">

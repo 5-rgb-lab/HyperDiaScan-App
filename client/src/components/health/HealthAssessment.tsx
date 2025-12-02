@@ -41,18 +41,18 @@ export default function HealthAssessment({
   };
 
   const allNutrients = [
-    { label: 'Calories', key: 'calories', unit: '', value: getNutrient('calories'), icon: '🔥' },
-    { label: 'Carbohydrates', key: 'carbohydrates', unit: '', value: getNutrient('carbohydrates'), icon: '🌾' },
-    { label: 'Protein', key: 'protein', unit: '', value: getNutrient('protein'), icon: '💪' },
-    { label: 'Total Fat', key: 'fat', unit: '', value: getNutrient('fat', 'totalFat'), icon: '🧈' },
-    { label: 'Saturated Fat', key: 'saturatedFat', unit: '', value: getNutrient('saturatedFat'), icon: '⚠️' },
-    { label: 'Trans Fat', key: 'transFat', unit: '', value: getNutrient('transFat'), icon: '🚫' },
-    { label: 'Sodium', key: 'sodium', unit: '', value: getNutrient('sodium'), icon: '🧂' },
-    { label: 'Potassium', key: 'potassium', unit: '', value: getNutrient('potassium'), icon: '🍌' },
-    { label: 'Cholesterol', key: 'cholesterol', unit: '', value: getNutrient('cholesterol'), icon: '❤️' },
-    { label: 'Dietary Fiber', key: 'fiber', unit: '', value: getNutrient('fiber', 'dietaryFiber'), icon: '🥬' },
-    { label: 'Total Sugars', key: 'totalSugars', unit: '', value: getNutrient('totalSugars', 'sugar'), icon: '🍬' },
-    { label: 'Added Sugars', key: 'addedSugars', unit: '', value: getNutrient('addedSugars'), icon: '🍭' },
+    { label: 'Calories', key: 'calories', unit: '', value: getNutrient('calories'), icon: '' },
+    { label: 'Carbohydrates', key: 'carbohydrates', unit: '', value: getNutrient('carbohydrates'), icon: '' },
+    { label: 'Protein', key: 'protein', unit: '', value: getNutrient('protein'), icon: '' },
+    { label: 'Total Fat', key: 'fat', unit: '', value: getNutrient('fat', 'totalFat'), icon: '' },
+    { label: 'Saturated Fat', key: 'saturatedFat', unit: '', value: getNutrient('saturatedFat'), icon: '' },
+    { label: 'Trans Fat', key: 'transFat', unit: '', value: getNutrient('transFat'), icon: '' },
+    { label: 'Sodium', key: 'sodium', unit: '', value: getNutrient('sodium'), icon: '' },
+    { label: 'Potassium', key: 'potassium', unit: '', value: getNutrient('potassium'), icon: '' },
+    { label: 'Cholesterol', key: 'cholesterol', unit: '', value: getNutrient('cholesterol'), icon: '' },
+    { label: 'Dietary Fiber', key: 'fiber', unit: '', value: getNutrient('fiber', 'dietaryFiber'), icon: '' },
+    { label: 'Total Sugars', key: 'totalSugars', unit: '', value: getNutrient('totalSugars', 'sugar'), icon: '' },
+    { label: 'Added Sugars', key: 'addedSugars', unit: '', value: getNutrient('addedSugars'), icon: '' },
   ];
 
   const isSafe = prediction === 'safe';

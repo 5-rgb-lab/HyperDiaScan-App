@@ -76,7 +76,7 @@ export function buildPrompt(nutrition: AnalyzeFoodRequest, user: UserProfile, un
 
       {
         "prediction": "Safe" | "Risky",
-        "reasoning": "First sentence: clearly state whether the food is Safe or Risky based strictly on RENI% rule-based thresholds. Second sentence: explain in detail why this is the case and how this food may affect the user's health conditions, BMI, and any relevant profile information. Third sentence: provide a short, personalized recommendation for the user."
+        "reasoning": "First sentence: clearly state whether the food is Safe or Risky based strictly on RENI% rule-based thresholds. Second sentence: explain in detail why this is the case and how this food may affect the user's health conditions, BMI, and any relevant profile information. Third sentence: explicitly state how the nutrients in this food are likely to affect the user's current blood pressure if they have hypertension (include systolic/diastolic values when available) or the user's current blood sugar if they have diabetes (include latest blood sugar value when available). Last sentence: provide a short, personalized recommendation for the user."
       }
 
       ONLY output the JSON. 
@@ -138,7 +138,7 @@ Use your own reasoning — no fixed rules or thresholds.
 
       {
         "prediction": "Safe" | "Risky",
-        "reasoning": "First sentence: clearly state whether the food is Safe or Risky. Second sentence: explain in detail how the nutrients affect the user's specific health conditions and user's profile. Third sentence: provide a short, personalized recommendation for the user."
+        "reasoning": "First sentence: clearly state whether the food is Safe or Risky. Second sentence: explain in detail why this is the case and how this food may affect the user's health conditions, BMI, and any relevant profile information. Third sentence: explicitly state how the nutrients in this food are likely to affect the user's current blood pressure if they have hypertension (include systolic/diastolic values when available) or the user's current blood sugar if they have diabetes (include latest blood sugar value when available).  Third  Last sentence: provide a short, personalized recommendation for the user."
       }
 
       ONLY output the JSON.
