@@ -21,8 +21,7 @@ function getDefaultHealthTips(isRisky: boolean) {
 }
 
 export function parseLlmResponse(output: string): HealthPrediction {
-  // Try several strategies to extract JSON from a noisy LLM output.
-  const extractJson = (text: string): string | null => {
+    const extractJson = (text: string): string | null => {
     const fenceJson = text.match(/```(?:json\n)?([\s\S]*?)```/i)
     if (fenceJson && fenceJson[1]) return fenceJson[1].trim()
 

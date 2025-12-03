@@ -49,7 +49,7 @@ export default function Profile() {
           <DialogHeader>
             <DialogTitle>Complete Your Profile</DialogTitle>
             <DialogDescription>
-              Welcome to HyperDiaScan! To provide you with personalized health insights, 
+              Welcome to HyperDiaSense! To provide you with personalized health insights, 
               we need some additional information. Please complete your profile to continue.
             </DialogDescription>
           </DialogHeader>

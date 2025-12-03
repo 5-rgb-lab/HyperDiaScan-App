@@ -6,7 +6,6 @@ import { parseLlmResponse } from '@/lib/parseLlm'
 import { parseTipsFromLlm } from '@/lib/tipsParser'
 import { fallbackAnalysis } from '@/lib/fallbackAnalysis'
 
-// Gradio Space configuration — read from Vite env with process.env fallback
 const SPACE_NAME = (import.meta.env?.VITE_GRADIO_SPACE_NAME as string)
 const CLASSIFY_ENDPOINT = (import.meta.env?.VITE_GRADIO_CLASSIFY_ENDPOINT as string)
 const HF_TOKEN = (import.meta.env?.VITE_HF_TOKEN as string)

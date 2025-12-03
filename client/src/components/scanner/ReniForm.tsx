@@ -99,8 +99,27 @@ export default function ReniForm({
         condition: data.condition || userCondition,
       };
 
+      // Mark all nutrient units as 'reni' (%) so HealthAssessment displays them as percentages
+      const payloadWithReniUnits = {
+        ...formattedData,
+        units: {
+          calories: 'reni',
+          carbohydrates: 'reni',
+          protein: 'reni',
+          fat: 'reni',
+          sodium: 'reni',
+          fiber: 'reni',
+          totalSugars: 'reni',
+          addedSugars: 'reni',
+          saturatedFat: 'reni',
+          transFat: 'reni',
+          potassium: 'reni',
+          cholesterol: 'reni',
+        },
+      } as any;
+
       if (!onAnalyze) throw new Error("onAnalyze function not provided!");
-      await onAnalyze(formattedData, { unit: 'reni' });
+      await onAnalyze(payloadWithReniUnits, { unit: 'reni' });
     } catch (error) {
       console.error("Error analyzing food:", error);
       alert(

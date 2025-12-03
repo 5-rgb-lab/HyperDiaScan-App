@@ -19,6 +19,7 @@ interface HealthAssessmentProps {
     fiber: number;
     sugar?: number;
     totalSugars?: number;
+    units?: Record<string, string>;
   };
 }
 
@@ -40,19 +41,44 @@ export default function HealthAssessment({
     return 0;
   };
 
+  const getUnit = (key: string, fallback?: string) => {
+    const units = (nutritionData as any)?.units as Record<string, string> | undefined;
+    const u = units?.[key];
+    // Check if this is RENI-based (user selected RENI form or % unit was explicitly set)
+    const isReni = u === 'reni' || u === '%' || u === 'RENI';
+    if (isReni) return '%';
+    if (u) return u;
+    // sensible defaults (g, mg, kcal)
+    const defaults: Record<string, string> = {
+      calories: 'kcal',
+      sodium: 'mg',
+      potassium: 'mg',
+      cholesterol: 'mg',
+      carbohydrates: 'g',
+      protein: 'g',
+      fat: 'g',
+      totalSugars: 'g',
+      addedSugars: 'g',
+      fiber: 'g',
+      saturatedFat: 'g',
+      transFat: 'g',
+    };
+    return defaults[key] || fallback || '';
+  };
+
   const allNutrients = [
-    { label: 'Calories', key: 'calories', unit: '', value: getNutrient('calories'), icon: '' },
-    { label: 'Carbohydrates', key: 'carbohydrates', unit: '', value: getNutrient('carbohydrates'), icon: '' },
-    { label: 'Protein', key: 'protein', unit: '', value: getNutrient('protein'), icon: '' },
-    { label: 'Total Fat', key: 'fat', unit: '', value: getNutrient('fat', 'totalFat'), icon: '' },
-    { label: 'Saturated Fat', key: 'saturatedFat', unit: '', value: getNutrient('saturatedFat'), icon: '' },
-    { label: 'Trans Fat', key: 'transFat', unit: '', value: getNutrient('transFat'), icon: '' },
-    { label: 'Sodium', key: 'sodium', unit: '', value: getNutrient('sodium'), icon: '' },
-    { label: 'Potassium', key: 'potassium', unit: '', value: getNutrient('potassium'), icon: '' },
-    { label: 'Cholesterol', key: 'cholesterol', unit: '', value: getNutrient('cholesterol'), icon: '' },
-    { label: 'Dietary Fiber', key: 'fiber', unit: '', value: getNutrient('fiber', 'dietaryFiber'), icon: '' },
-    { label: 'Total Sugars', key: 'totalSugars', unit: '', value: getNutrient('totalSugars', 'sugar'), icon: '' },
-    { label: 'Added Sugars', key: 'addedSugars', unit: '', value: getNutrient('addedSugars'), icon: '' },
+    { label: 'Calories', key: 'calories', unit: getUnit('calories'), value: getNutrient('calories'), icon: '' },
+    { label: 'Carbohydrates', key: 'carbohydrates', unit: getUnit('carbohydrates'), value: getNutrient('carbohydrates'), icon: '' },
+    { label: 'Protein', key: 'protein', unit: getUnit('protein'), value: getNutrient('protein'), icon: '' },
+    { label: 'Total Fat', key: 'fat', unit: getUnit('fat'), value: getNutrient('fat', 'totalFat'), icon: '' },
+    { label: 'Saturated Fat', key: 'saturatedFat', unit: getUnit('saturatedFat'), value: getNutrient('saturatedFat'), icon: '' },
+    { label: 'Trans Fat', key: 'transFat', unit: getUnit('transFat'), value: getNutrient('transFat'), icon: '' },
+    { label: 'Sodium', key: 'sodium', unit: getUnit('sodium'), value: getNutrient('sodium'), icon: '' },
+    { label: 'Potassium', key: 'potassium', unit: getUnit('potassium'), value: getNutrient('potassium'), icon: '' },
+    { label: 'Cholesterol', key: 'cholesterol', unit: getUnit('cholesterol'), value: getNutrient('cholesterol'), icon: '' },
+    { label: 'Dietary Fiber', key: 'fiber', unit: getUnit('fiber'), value: getNutrient('fiber', 'dietaryFiber'), icon: '' },
+    { label: 'Total Sugars', key: 'totalSugars', unit: getUnit('totalSugars'), value: getNutrient('totalSugars', 'sugar'), icon: '' },
+    { label: 'Added Sugars', key: 'addedSugars', unit: getUnit('addedSugars'), value: getNutrient('addedSugars'), icon: '' },
   ];
 
   const isSafe = prediction === 'safe';

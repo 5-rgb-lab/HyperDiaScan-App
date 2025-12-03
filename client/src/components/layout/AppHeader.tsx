@@ -40,7 +40,7 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                 <Activity className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-xl font-bold">HyperDiaScan</h1>
+              <h1 className="text-xl font-bold">HyperDiaSense</h1>
             </div>
 
             {/* Desktop Navigation */}
