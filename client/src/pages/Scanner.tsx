@@ -204,6 +204,7 @@ export default function Scanner() {
       setHealthResult(result);
       
       // Update scannedData with the user-edited nutrition values so HealthAssessment displays them
+      // Also preserve units from the form (if provided via NutritionForm or ReniForm)
       setScannedData({
         calories: data.calories || 0,
         carbohydrates: data.carbohydrates || 0,
@@ -219,7 +220,8 @@ export default function Scanner() {
         cholesterol: (data as any).cholesterol || 0,
         servingSize: (data as any).servingSize || '',
         servingsPerContainer: (data as any).servingsPerContainer || 0,
-      });
+        units: (data as any).units || {},
+      } as any);
       
       // Show success toast with meaningful health insight
       const severity = result.prediction === "Safe" ? "default" : "destructive";
@@ -450,13 +452,13 @@ export default function Scanner() {
                           onClick={() => handleStartEmptyWithMode('grams')}
                           className="h-12 w-full text-base font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                         >
-                          Grams
+                          Units (g, mg, ml)
                         </Button>
                         <Button
                           onClick={() => handleStartEmptyWithMode('reni')}
                           className="h-12 w-full text-base font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                         >
-                          RENI
+                          RENI(%)
                         </Button>
                       </div>
                     </div>
@@ -524,7 +526,7 @@ export default function Scanner() {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Scan Another Item
+                Enter Another Item
               </Button>
               <Button
                 onClick={handleSaveToHistory}

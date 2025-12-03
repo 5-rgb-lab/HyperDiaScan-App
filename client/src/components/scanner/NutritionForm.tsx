@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { analyzeFoodSchema, AnalyzeFoodRequest } from "@shared/schema";
@@ -32,6 +32,7 @@ export default function NutritionForm({
   userCondition = "diabetes",
   onAnalyze,
 }: NutritionFormProps) {
+  const [units, setUnits] = useState<Record<string, string>>({});
   const form = useForm<AnalyzeFoodRequest>({
     resolver: zodResolver(analyzeFoodSchema),
     defaultValues: {
@@ -74,6 +75,9 @@ export default function NutritionForm({
         servingsPerContainer: Number((initialData as any).servingsPerContainer) || 0,
         condition: userCondition,
       };
+      // initialize units state from any incoming data (backwards compatible)
+      const initialUnits: Record<string, string> = (initialData as any)?.units || {};
+      setUnits(initialUnits);
       form.reset(formData);
     }
   }, [initialData, form, userCondition]);
@@ -99,8 +103,14 @@ export default function NutritionForm({
         condition: data.condition || userCondition,
       };
 
+      // attach units map (per-nutrient) to payload for richer prompts
+      // keep backwards compatibility: if no units were selected, default mapping will be handled by promptBuilder
+      const payloadWithUnits = {
+        ...formattedData,
+        units: units,
+      } as any;
       if (!onAnalyze) throw new Error("onAnalyze function not provided!");
-      await onAnalyze(formattedData, { unit: 'grams' });
+      await onAnalyze(payloadWithUnits, { unit: 'grams' });
     } catch (error) {
       console.error("Error analyzing food:", error);
       alert(
@@ -218,8 +228,21 @@ export default function NutritionForm({
                                 placeholder="0"
                               />
                               {fieldData.unit !== "count" && fieldData.unit !== "kcal" && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
-                                  {fieldData.unit}
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                  <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+                                    {/** display selected unit or default */}
+                                    {units[fieldData.name] || fieldData.unit}
+                                  </div>
+                                  <select
+                                    aria-label={`${fieldData.name}-unit`}
+                                    value={units[fieldData.name] || fieldData.unit}
+                                    onChange={(e) => setUnits((prev) => ({ ...prev, [fieldData.name]: e.target.value }))}
+                                    className="rounded px-2 py-1 text-xs border"
+                                  >
+                                    <option value="g">g</option>
+                                    <option value="mg">mg</option>
+                                    <option value="ml">ml</option>
+                                  </select>
                                 </div>
                               )}
                             </div>

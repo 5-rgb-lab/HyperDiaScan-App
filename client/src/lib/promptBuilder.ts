@@ -1,6 +1,6 @@
 import { AnalyzeFoodRequest, UserProfile } from '@shared/schema'
 
-export function buildPrompt(nutrition: AnalyzeFoodRequest, user: UserProfile, unit: 'reni' | 'grams' = 'grams'): string {
+export function buildPrompt(nutrition: AnalyzeFoodRequest & { units?: Record<string, string> }, user: UserProfile, unit: 'reni' | 'grams' = 'grams'): string {
   const heightM = (user?.demographics?.heightCm ?? 0) / 100 || 0;
   const bmi = heightM > 0 && user?.demographics?.weightKg ? user.demographics.weightKg / (heightM * heightM) : 0;
 
@@ -13,6 +13,11 @@ export function buildPrompt(nutrition: AnalyzeFoodRequest, user: UserProfile, un
     user.primaryCondition === "hypertension" || user.primaryCondition === "both"
       ? `BP: ${user.hypertensionStatus?.bloodPressure?.systolic ?? "unknown"}/${user.hypertensionStatus?.bloodPressure?.diastolic ?? "unknown"}`
       : "";
+
+  const getUnit = (name: string, fallback?: string) => {
+    // units provided by UI: g, mg, ml, kcal etc. Default to 'g' for backwards compatibility
+    return (nutrition as any)?.units?.[name] || fallback || 'g';
+  };
 
   if (unit === 'reni') {
     return `You are a nutrition analysis model. Follow ALL RULES below strictly.
@@ -60,15 +65,21 @@ export function buildPrompt(nutrition: AnalyzeFoodRequest, user: UserProfile, un
       ==========================
       📌 **FOOD DATA (RENI-BASED)**
       ==========================
-      Food: ${nutrition.foodName || "Unnamed"}  
-      Calories: ${nutrition.calories}  
-      Carbs: ${nutrition.carbohydrates}
-      Protein: ${nutrition.protein}
-      Fat: ${nutrition.fat}
-      Sodium: ${nutrition.sodium}
-      Sugars: ${nutrition.totalSugars ?? "?"}
-      Fiber: ${nutrition.fiber}
-      Potassium: ${nutrition.potassium ?? "?"}
+      Food: ${nutrition.foodName || "Unnamed"}
+      Calories: ${nutrition.calories} ${getUnit('calories','kcal')}
+      Added Sugars: ${nutrition.addedSugars} ${getUnit('addedSugars')}
+      Cholesterol: ${nutrition.cholesterol} ${getUnit('cholesterol','mg')}
+      Carbs: ${nutrition.carbohydrates} ${getUnit('carbohydrates')}
+      Protein: ${nutrition.protein} ${getUnit('protein')}
+      Fat: ${nutrition.fat} ${getUnit('fat')}
+      Saturated Fat: ${nutrition.saturatedFat} ${getUnit('saturatedFat')}
+      Trans Fat: ${nutrition.transFat} ${getUnit('transFat')}
+      Sodium: ${nutrition.sodium} ${getUnit('sodium','mg')}
+      Total Sugars: ${nutrition.totalSugars} ${getUnit('totalSugars')}
+      Fiber: ${nutrition.fiber} ${getUnit('fiber')}
+      Potassium: ${nutrition.potassium} ${getUnit('potassium','mg')}
+      Serving Size: ${nutrition.servingSize || "unknown"}
+      Serving Container: ${nutrition.servingsPerContainer || "unknown"}
       ==========================
       📌 **OUTPUT FORMAT**
       ==========================
@@ -120,16 +131,20 @@ Use your own reasoning — no fixed rules or thresholds.
       📌 FOOD DATA
       ==========================
       Food: ${nutrition.foodName || "Unnamed"}
-      Calories: ${nutrition.calories}
-      Carbs: ${nutrition.carbohydrates}
-      Protein: ${nutrition.protein}
-      Fat: ${nutrition.fat}
-      Saturated Fat: ${nutrition.saturatedFat}
-      Trans Fat: ${nutrition.transFat}
-      Sodium: ${nutrition.sodium}
-      Total Sugars: ${nutrition.totalSugars}
-      Fiber: ${nutrition.fiber}
-      Potassium: ${nutrition.potassium}
+      Calories: ${nutrition.calories} ${getUnit('calories','kcal')}
+      Added Sugars: ${nutrition.addedSugars} ${getUnit('addedSugars')}
+      Cholesterol: ${nutrition.cholesterol} ${getUnit('cholesterol','mg')}
+      Carbs: ${nutrition.carbohydrates} ${getUnit('carbohydrates')}
+      Protein: ${nutrition.protein} ${getUnit('protein')}
+      Fat: ${nutrition.fat} ${getUnit('fat')}
+      Saturated Fat: ${nutrition.saturatedFat} ${getUnit('saturatedFat')}
+      Trans Fat: ${nutrition.transFat} ${getUnit('transFat')}
+      Sodium: ${nutrition.sodium} ${getUnit('sodium','mg')}
+      Total Sugars: ${nutrition.totalSugars} ${getUnit('totalSugars')}
+      Fiber: ${nutrition.fiber} ${getUnit('fiber')}
+      Potassium: ${nutrition.potassium} ${getUnit('potassium','mg')}
+      Serving Size: ${nutrition.servingSize || "unknown"}
+      Serving Container: ${nutrition.servingsPerContainer || "unknown"}
 
       ==========================
       📌 OUTPUT FORMAT
