@@ -241,7 +241,7 @@ export default function NutritionForm({
                                   >
                                     <option value="g">g</option>
                                     <option value="mg">mg</option>
-                                    <option value="ml">ml</option>
+                                    {/* <option value="ml">ml</option> */}
                                   </select>
                                 </div>
                               )}
