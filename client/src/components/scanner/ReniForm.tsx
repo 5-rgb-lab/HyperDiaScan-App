@@ -131,7 +131,7 @@ export default function ReniForm({
   };
 
   return (
-    <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-blue-950/20 dark:to-purple-950/20">
+    <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50/30 to-green-50/30 dark:from-gray-800 dark:via-emerald-950/20 dark:to-green-950/20">
       <CardHeader className="space-y-1 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-lg">
@@ -255,7 +255,7 @@ export default function ReniForm({
 
             <Button
               type="submit"
-              className="w-full h-14 text-base font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 hover:from-blue-700 hover:via-purple-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+              className="w-full h-14 text-base font-bold bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
             >
               <Sparkles className="w-5 h-5 mr-2" />
               Analyze Food Safety

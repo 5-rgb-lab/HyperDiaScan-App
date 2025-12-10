@@ -32,7 +32,7 @@ export default function AppHeader({ user, onProfileClick, onSignOut }: AppHeader
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white shadow-lg">
+      <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-lg">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             {/* Logo / Branding */}
