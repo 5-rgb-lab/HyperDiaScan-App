@@ -61,8 +61,8 @@ export default function Home() {
   };
 
   const quickActions = [
-    { icon: Camera, title: 'Analyze Food', href: '/scanner', color: 'from-blue-500 to-cyan-500' },
-    { icon: History, title: 'View History & Analytics', href: '/history', color: 'from-purple-500 to-pink-500' },
+    { icon: Camera, title: 'Analyze Food', href: '/scanner', color: 'from-emerald-500 to-green-500' },
+    { icon: History, title: 'View History & Analytics', href: '/history', color: 'from-teal-500 to-cyan-500' },
     { icon: User, title: 'Update Profile', href: '/profile', color: 'from-green-500 to-emerald-500' },
   ];
 

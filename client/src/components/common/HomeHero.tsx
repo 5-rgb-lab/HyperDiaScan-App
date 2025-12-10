@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 export default function HomeHero({ userProfile }: { userProfile?: any }) {
   return (
-    <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-teal-600 dark:from-blue-700 dark:via-purple-700 dark:to-teal-700 rounded-2xl p-8 md:p-12 text-white shadow-2xl overflow-hidden relative">
+    <div className="bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 dark:from-emerald-600 dark:via-green-600 dark:to-teal-600 rounded-2xl p-8 md:p-12 text-white shadow-2xl overflow-hidden relative">
       <div className="relative text-center space-y-6">
         <div className="flex justify-center">
           <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-xl">
@@ -32,7 +32,7 @@ export default function HomeHero({ userProfile }: { userProfile?: any }) {
 
         <div className="pt-4">
           <Link href="/scanner">
-            <Button className="bg-white text-blue-600 hover:bg-white/90 font-semibold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300">
+            <Button className="bg-white text-emerald-600 hover:bg-white/90 font-semibold px-8 py-6 text-lg rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300">
               Analyze Food Now
             </Button>
           </Link>

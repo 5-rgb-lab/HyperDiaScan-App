@@ -106,12 +106,12 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
         <Accordion type="multiple" defaultValue={["basic"]} className="space-y-4 ">
           {/* Basic Info */}
           <AccordionItem value="basic" className="border-0 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-blue-50 hover:via-purple-50 hover:to-teal-50 dark:hover:from-blue-950/30 dark:hover:via-purple-950/30 dark:hover:to-teal-950/30 transition-all duration-300">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-emerald-50 hover:via-green-50 hover:to-teal-50 dark:hover:from-emerald-950/30 dark:hover:via-green-950/30 dark:hover:to-teal-950/30 transition-all duration-300">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-teal-600 shadow-lg">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 shadow-lg">
                   <User className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-lg bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent">Basic Information</span>
+                <span className="font-bold text-lg bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent">Basic Information</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6 pt-2">
@@ -121,12 +121,12 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
 
           {/* Demographics */}
           <AccordionItem value="demographics" className="border-0 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-purple-50 hover:via-teal-50 hover:to-blue-50 dark:hover:from-purple-950/30 dark:hover:via-teal-950/30 dark:hover:to-blue-950/30 transition-all duration-300">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-green-50 hover:via-teal-50 hover:to-emerald-50 dark:hover:from-green-950/30 dark:hover:via-teal-950/30 dark:hover:to-emerald-950/30 transition-all duration-300">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-600 via-teal-600 to-blue-600 shadow-lg">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 via-teal-500 to-emerald-500 shadow-lg">
                   <MapPin className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-lg bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 bg-clip-text text-transparent">Demographics</span>
+                <span className="font-bold text-lg bg-gradient-to-r from-green-500 via-teal-500 to-emerald-500 bg-clip-text text-transparent">Demographics</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6 pt-2">
@@ -136,12 +136,12 @@ export default function UserProfile({ user, onSaveProfile, onSignOut }: UserProf
 
           {/* Medical Info */}
           <AccordionItem value="medical" className="border-0 bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-teal-50 hover:via-blue-50 hover:to-purple-50 dark:hover:from-teal-950/30 dark:hover:via-blue-950/30 dark:hover:to-purple-950/30 transition-all duration-300">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gradient-to-r hover:from-teal-50 hover:via-emerald-50 hover:to-green-50 dark:hover:from-teal-950/30 dark:hover:via-emerald-950/30 dark:hover:to-green-950/30 transition-all duration-300">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-teal-600 via-blue-600 to-purple-600 shadow-lg">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 via-emerald-500 to-green-500 shadow-lg">
                   <HeartPulse className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-lg bg-gradient-to-r from-teal-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">Medical Information</span>
+                <span className="font-bold text-lg bg-gradient-to-r from-teal-500 via-emerald-500 to-green-500 bg-clip-text text-transparent">Medical Information</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6 pt-2">

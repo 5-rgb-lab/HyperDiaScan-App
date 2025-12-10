@@ -143,14 +143,14 @@ export default function AuthForm() {
   // If registration was successful, show a success message
   if (registrationSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="p-3 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl shadow-lg">
                 <CheckCircle className="w-8 h-8 text-white" />
               </div>
-              <CardTitle className="text-2xl bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              <CardTitle className="text-2xl bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent">
                 Registration Complete!
               </CardTitle>
             </div>
@@ -177,14 +177,14 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 relative">
       {isLoading && (
         <div className="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-6">
           <div className="relative w-32 h-32">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-200 dark:border-blue-900"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 animate-spin"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-200 dark:border-emerald-900"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-emerald-500 animate-spin"></div>
             <div
-              className="absolute inset-2 rounded-full border-4 border-transparent border-t-purple-500 animate-spin"
+              className="absolute inset-2 rounded-full border-4 border-transparent border-t-green-500 animate-spin"
               style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}
             ></div>
             <div
@@ -199,15 +199,15 @@ export default function AuthForm() {
               >
                 <defs>
                   <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#4ef2c3"/>
-                    <stop offset="100%" stopColor="#3aa9ff"/>
+                    <stop offset="0%" stopColor="#34d399"/>
+                    <stop offset="100%" stopColor="#10b981"/>
                   </linearGradient>
                 </defs>
                 <path d="M496 232h-73.4l-40.9-102.4c-4.8-12.1-16.5-19.6-29.4-19.6s-24.5 7.6-29.3 19.6l-71.5 179.2-45.8-91.7c-5.3-10.5-15.9-17.1-27.7-17.1-11.8 0-22.4 6.6-27.7 17.2l-37.7 75.1H16c-8.8 0-16 7.2-16 16s7.2 16 16 16h117.6c12 0 22.8-6.9 28-17.8l23.8-47.4 46 92c5.2 10.3 15.5 16.9 27.1 17.1h.6c11.4 0 21.8-6.7 26.9-17.4l70.9-177.2 27.4 68.6c4.8 12.1 16.5 19.6 29.4 19.6H496c8.8 0 16-7.2 16-16s-7.2-16-16-16z"/>
               </svg>
             </div>
           </div>
-          <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+          <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent">
             {loadingMessage || 'Loading...'}
           </h3>
           <p className="text-sm text-gray-700">Please wait a moment</p>
@@ -216,10 +216,10 @@ export default function AuthForm() {
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl shadow-lg">
+            <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl shadow-lg">
               <Activity className="w-8 h-8 text-white" />
             </div>
-            <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+            <CardTitle className="text-2xl bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent">
               HyperDiaSense
             </CardTitle>
           </div>

@@ -398,7 +398,7 @@ export default function Scanner() {
               <Card className="w-full border-0 shadow-xl bg-white dark:bg-gray-800">
                 <CardContent className="p-8">
                   <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent mb-2">
                       Choose Analysis Method
                     </h2>
                     <p className="text-sm text-muted-foreground">
@@ -432,13 +432,13 @@ export default function Scanner() {
                     </button> */}
 
                     {/* Manual Entry */}
-                    <div className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-purple-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-purple-50 via-teal-50 to-blue-50 dark:from-purple-950/30 dark:via-teal-950/30 dark:to-blue-950/30">
+                    <div className="group relative overflow-hidden p-6 rounded-2xl border-2 border-transparent hover:border-emerald-400 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-950/30 dark:via-green-950/30 dark:to-teal-950/30">
                       <div className="flex flex-col items-center gap-4 text-center mb-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 via-teal-600 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                           <PenLine className="w-8 h-8 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 bg-clip-text text-transparent mb-1">
+                          <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 bg-clip-text text-transparent mb-1">
                             Manual Entry
                           </h3>
                           <p className="text-sm text-muted-foreground">
@@ -450,13 +450,13 @@ export default function Scanner() {
                       <div className="grid grid-cols-2 gap-3">
                         <Button
                           onClick={() => handleStartEmptyWithMode('grams')}
-                          className="h-12 w-full text-base font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                          className="h-12 w-full text-base font-bold bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                         >
                           Units (g, mg, ml)
                         </Button>
                         <Button
                           onClick={() => handleStartEmptyWithMode('reni')}
-                          className="h-12 w-full text-base font-bold bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                          className="h-12 w-full text-base font-bold bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                         >
                           RENI(%)
                         </Button>
@@ -520,7 +520,7 @@ export default function Scanner() {
                   setCurrentFoodName("")
                   setIsImageMode(false)
                 }}
-                className="h-12 bg-gradient-to-r from-purple-600 via-teal-600 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 font-semibold"
+                className="h-12 bg-gradient-to-r from-teal-500 via-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 font-semibold"
                 data-testid="button-scan-another"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -530,7 +530,7 @@ export default function Scanner() {
               </Button>
               <Button
                 onClick={handleSaveToHistory}
-                className="h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                className="h-12 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
                 data-testid="button-save-to-history"
                 disabled={saving}
               >

@@ -45,7 +45,7 @@ export function MobileNav() {
   const [location] = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white backdrop-blur-lg border-t border-transparent shadow-lg lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white backdrop-blur-lg border-t border-transparent shadow-lg lg:hidden">
       <div className="container mx-auto px-4">
         <div className="flex justify-around gap-2 py-3">
           {navItems.map((item) => {
