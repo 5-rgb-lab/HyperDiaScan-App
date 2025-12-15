@@ -452,13 +452,13 @@ export default function Scanner() {
                           onClick={() => handleStartEmptyWithMode('grams')}
                           className="h-12 w-full text-base font-bold bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                         >
-                          Units (g, mg, ml)
+                          Units
                         </Button>
                         <Button
                           onClick={() => handleStartEmptyWithMode('reni')}
                           className="h-12 w-full text-base font-bold bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
                         >
-                          RENI(%)
+                          RENI
                         </Button>
                       </div>
                     </div>
