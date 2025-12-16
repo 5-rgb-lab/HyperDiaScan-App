@@ -1,31 +1,16 @@
-
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { saveScanRecord } from '@/lib/firestore';
+import * as firestore from 'firebase/firestore';
 
-vi.mock('firebase/firestore');
+// Mock only the functions you need
+vi.mock('firebase/firestore', () => ({
+  collection: vi.fn((db: any, name: string) => ({ path: name })),
+  addDoc: vi.fn()
+}));
 
 describe('History - Save Records', () => {
-  it('should save scan record successfully', async () => {
-    const mockRecord = {
-      foodName: 'Apple',
-      condition: 'diabetes' as const,
-      prediction: 'Safe' as const,
-      nutritionData: {
-        calories: 95,
-        carbohydrates: 25,
-        protein: 0.5,
-        fat: 0.3,
-        sodium: 2,
-        fiber: 4,
-        totalSugars: 19
-      }
-    };
-
-    const { addDoc } = await import('firebase/firestore');
-    vi.mocked(addDoc).mockResolvedValue({ id: 'record-123' } as any);
-
-    const recordId = await saveScanRecord('test-user', mockRecord as any);
-    expect(recordId).toBe('record-123');
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('should include timestamp when saving record', async () => {
@@ -45,11 +30,15 @@ describe('History - Save Records', () => {
       }
     };
 
-    const { addDoc } = await import('firebase/firestore');
-    await saveScanRecord('test-user', mockRecord as any);
+    // Mock addDoc to return a document reference with an id
+    vi.mocked(firestore.addDoc).mockResolvedValue({ id: 'mock-id' } as any);
 
-    expect(addDoc).toHaveBeenCalled();
-    const call = vi.mocked(addDoc).mock.calls[0];
+    const result = await saveScanRecord('test-user', mockRecord as any);
+
+    expect(firestore.addDoc).toHaveBeenCalled();
+    expect(result).toBe('mock-id');
+
+    const call = vi.mocked(firestore.addDoc).mock.calls[0];
     const payload = call[1] as any;
     expect(payload).toBeDefined();
     expect(typeof payload.timestamp).toBe('string');
@@ -63,8 +52,7 @@ describe('History - Save Records', () => {
       nutritionData: {} as any
     };
 
-    const { addDoc } = await import('firebase/firestore');
-    vi.mocked(addDoc).mockRejectedValue(new Error('Firestore error'));
+    vi.mocked(firestore.addDoc).mockRejectedValue(new Error('Firestore error'));
 
     await expect(saveScanRecord('test-user', mockRecord as any)).rejects.toThrow();
   });
