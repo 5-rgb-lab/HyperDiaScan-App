@@ -230,7 +230,7 @@ export default function Scanner() {
         : "This food may need caution with your condition.";
       
       setToastInfo({
-        title: `${result.prediction === "Safe" ? "✅" : "⚠️"} Analysis Complete`,
+        title: `${result.prediction === "Safe" ? "" : ""} Analysis Complete`,
         description: message,
         variant: severity
       });
@@ -297,7 +297,7 @@ export default function Scanner() {
       }
 
       setToastInfo({
-        title: "✅ Saved!",
+        title: "Saved!",
         description: `Scan ${isImageMode ? '(from image)' : '(manual entry)'} and health tips saved successfully.`,
         variant: "default",
       });
@@ -553,7 +553,6 @@ export default function Scanner() {
         )}
       </div>
 
-      {/* ✅ Toast lives here, OUTSIDE your scanner UI */}
       <Toast open={open} onOpenChange={setOpen} variant={toastInfo.variant}>
         <div className="grid gap-1">
           <ToastTitle>{toastInfo.title}</ToastTitle>

@@ -41,7 +41,7 @@ export default function RecentScansCard({ recentScans, getResultColor }: { recen
                 </p>
               </div>
               <Badge className={`${getModernBadgeStyle(scan.result)} px-3 py-1 font-medium whitespace-nowrap`}>
-                {scan.result === 'Safe for Consumption' ? '✅ Safe' : '⚠️ Risky'}
+                {scan.result === 'Safe for Consumption' ? 'Safe' : 'Risky'}
               </Badge>
             </div>
           </div>

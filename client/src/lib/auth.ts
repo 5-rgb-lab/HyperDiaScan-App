@@ -63,7 +63,6 @@ export const signUpWithEmail = async (
 
     await updateProfile(user, { displayName: name });
 
-    // ✅ Create only minimal profile
     await createUserProfile(user, profileData);
 
     await firebaseSignOut(auth);

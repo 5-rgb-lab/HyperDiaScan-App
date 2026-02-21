@@ -11,7 +11,7 @@ export default function MedicalDisclaimer() {
             <Shield className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2">⚠️ Important Medical Disclaimer</h2>
+            <h2 className="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2"> Important Medical Disclaimer</h2>
             <div className="space-y-2 text-amber-800 dark:text-amber-200">
               <p className="leading-relaxed"><strong>This application is a health assistance tool only and should not replace professional medical advice.</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-2">
