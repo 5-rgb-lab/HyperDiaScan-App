@@ -56,7 +56,7 @@ export default function ScannerLoadingCard() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100 mb-1 flex items-center gap-1">
-                <span>⚠️</span> Medical Disclaimer
+                <span></span> Medical Disclaimer
               </h3>
               <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
                 This analysis is for informational purposes only and should not replace professional medical advice. Always consult with your healthcare provider before making dietary decisions.

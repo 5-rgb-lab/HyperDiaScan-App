@@ -171,8 +171,8 @@ export default function AllScanHistoryTab({ records, loading, onViewDetails }: A
                       `}
                     >
                       {record.prediction === 'risky'
-                        ? '⚠️ Not Recommended'
-                        : '✅ Safe'}
+                        ? 'Not Recommended'
+                        : 'Safe'}
                     </Badge>
                   </div>
                 </div>

@@ -155,8 +155,8 @@ export default function ScanHistory({ records, onViewDetails, onDeleteRecord }: 
                       `}
                     >
                       {record.prediction === 'risky'
-                        ? '⚠️ Not Recommended'
-                        : '✅ Safe'}
+                        ? 'Not Recommended'
+                        : 'Safe'}
                     </Badge>
                   </div>
                 </div>
